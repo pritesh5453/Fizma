@@ -1,3 +1,5 @@
+import 'package:fizma/Screens/home/homescreen.dart';
+import 'package:fizma/Screens/navbar/navbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -158,7 +160,10 @@ class _SignInScreenState extends State<SignInScreen> {
                             ),
                             const SizedBox(height: 18),
 
-                            _LoginButton(onTap: () {}),
+                            _LoginButton(onTap: () {
+                              Navigator.push(context, 
+                              MaterialPageRoute(builder: (context) => const EventsNavBar()));
+                            }),
                             const SizedBox(height: 20),
 
                             Row(
