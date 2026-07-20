@@ -1,3 +1,5 @@
+import 'package:fizma/Screens/Profile/profile_screen.dart';
+import 'package:fizma/Screens/add_event/add_event_screen.dart';
 import 'package:fizma/Screens/events/events.dart';
 import 'package:fizma/Screens/home/homescreen.dart';
 import 'package:flutter/material.dart';
@@ -23,8 +25,8 @@ class _EventsNavBarState extends State<EventsNavBar> {
   final _screens = const [
     HomeScreen(),
     LiveEventsScreen(),
-    Center(child: Text('Add Event screen')),
-    Center(child: Text('Profile screen')),
+    AddEventScreen(),
+    ProfileScreen(),
   ];
 
   static const List<_NavItemData> _navItems = [

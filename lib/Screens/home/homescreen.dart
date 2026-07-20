@@ -1,3 +1,5 @@
+import 'package:fizma/Screens/Payment_Screens/Payment_screen.dart';
+import 'package:fizma/Screens/add_event/add_event_screen.dart';
 import 'package:fizma/Screens/home/QuickActionCard.dart';
 import 'package:fizma/Screens/home/components/recentevent_card.dart';
 import 'package:fizma/Screens/home/components/stats_card.dart';
@@ -113,7 +115,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           iconBg: AppColors.actionRedBg,
                           iconFg: AppColors.primaryRed,
                           label: 'New Event',
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(context, 
+                            MaterialPageRoute(builder: (context) => AddEventScreen()));
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -123,7 +128,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           iconBg: AppColors.actionGreenBg,
                           iconFg: AppColors.statGreenFg,
                           label: 'Payment',
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(context, 
+                            MaterialPageRoute(builder: (context) => PaymentScreen()));
+                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -299,7 +307,7 @@ class _HeaderSection extends StatelessWidget {
                         SizedBox(height: 18),
 
                         Text(
-                          'Hello Host, 👋',
+                          'Hello Pritesh, 👋',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.white70,
