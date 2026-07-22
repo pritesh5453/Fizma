@@ -1,4 +1,5 @@
 import 'package:fizma/Screens/Auth/login.dart';
+import 'package:fizma/Screens/Profile/edit_profile.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 // Import your LoginScreen here
@@ -19,7 +20,7 @@ class ProfileScreen extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 10),
-                _buildProfileCard(),
+               _buildProfileCard(context),
                 const SizedBox(height: 16),
                 _buildMenuCard(context),
                 const SizedBox(height: 16),
@@ -34,7 +35,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   // --- Profile Header Card ---
-  Widget _buildProfileCard() {
+  Widget _buildProfileCard(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -85,21 +86,30 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
               Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: AppColors.statPinkBg,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.edit_outlined,
-                    color: AppColors.primaryRed,
-                    size: 18,
-                  ),
-                ),
-              ),
+  right: 0,
+  top: 0,
+  child: Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: () {
+        showBasicDetailsDialog(context);
+      },
+      borderRadius: BorderRadius.circular(50),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: const BoxDecoration(
+          color: AppColors.statPinkBg,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.edit_outlined,
+          color: AppColors.primaryRed,
+          size: 18,
+        ),
+      ),
+    ),
+  ),
+),
             ],
           ),
           const SizedBox(height: 12),

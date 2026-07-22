@@ -1,5 +1,6 @@
 import 'package:fizma/Screens/add_event/add_event_slot.dart';
-import 'package:fizma/Screens/add_event/create_ticket.dart';
+import 'package:fizma/Screens/add_event/create_table_screen.dart';
+import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
 import 'package:fizma/Screens/add_event/event_slot.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -371,7 +372,16 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
             ...eventSlots.map((slot) => EventSlotCard(
                   slot: slot,
                   onActiveChanged: (v) => setState(() => slot.isActive = v),
-                  onActionTap: () {},
+                  onActionTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => slot.actionLabel == 'Create Table'
+                            ? const CreateTableDetailsScreen()
+                            : const CreateTicketDetailsScreen(),
+                      ),
+                    );
+                  },
                   onEditTap: () {},
                   onDeleteTap: () => setState(() => eventSlots.remove(slot)),
                 )),
@@ -439,10 +449,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
             child: SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(context, 
-                  MaterialPageRoute(builder: (context) => const CreateTicketsScreen()));
-                },
+                onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,
                   foregroundColor: AppColors.kWhite,

@@ -1,3 +1,4 @@
+import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
 import 'package:fizma/Screens/navbar/navbar.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -80,7 +81,8 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                           ),
                           OutlinedButton.icon(
                             onPressed: () {
-                              // Add ticket logic
+                              Navigator.push(context, 
+                              MaterialPageRoute(builder: (context) => const CreateTicketDetailsScreen()));
                             },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: AppColors.kRed, width: 1.2),
