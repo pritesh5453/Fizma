@@ -1,3 +1,4 @@
+import 'package:fizma/Screens/Auth/signup_screen.dart';
 import 'package:fizma/Screens/home/homescreen.dart';
 import 'package:fizma/Screens/navbar/navbar.dart';
 import 'package:flutter/material.dart';
@@ -224,7 +225,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                   ),
                                   GestureDetector(
                                     onTap: () {
-                                      // TODO: navigate to your sign up screen
+                                      Navigator.push(context, 
+                                      MaterialPageRoute(builder: (context) => const CreateAccountScreen()));
                                     },
                                     child: const Text(
                                       'Sign Up',

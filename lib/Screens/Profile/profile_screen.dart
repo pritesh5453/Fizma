@@ -1,4 +1,4 @@
-import 'package:fizma/Screens/Auth/login.dart';
+import 'package:fizma/Screens/Auth/login_new.dart';
 import 'package:fizma/Screens/Profile/edit_profile.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -460,7 +460,7 @@ class ProfileScreen extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pushReplacement(context, 
-                          MaterialPageRoute(builder: (context) => const SignInScreen()));
+                          MaterialPageRoute(builder: (context) => const LoginScreen()));
                           
                           
                         },
