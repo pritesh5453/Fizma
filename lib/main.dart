@@ -1,8 +1,13 @@
 import 'package:fizma/Screens/onboarding/splash_screen_new.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
-  runApp(const MyApp());
+  // ✅ MUST: Register plugins before runApp
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // ✅ Riverpod ke liye ProviderScope wrap
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {

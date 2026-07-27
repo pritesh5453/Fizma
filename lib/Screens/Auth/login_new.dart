@@ -1,14 +1,13 @@
+// lib/Screens/Auth/login_screen.dart
+
 import 'package:fizma/Screens/Auth/otp_screen.dart';
 import 'package:fizma/Screens/Auth/signup_screen.dart';
 import 'package:fizma/Screens/onboarding/fizma_logo.dart';
+import 'package:fizma/models_n_services/login/login_svc.dart';
+import 'package:fizma/utils/app_preference.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-/// Login screen — mobile number + OTP flow, matching the actual
-/// reference design: soft white-to-pink [AppColors.screenGradient]
-/// background (no colored header), Fizmaa logo top-left, a faint
-/// unlock illustration top-right, and a bottom "Sign Up" / privacy
-/// policy footer.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -18,6 +17,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
+  final OrganiserAuthService _authService = OrganiserAuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -90,8 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 // ---------- OTP notice ----------
                 Container(
                   width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: AppColors.kPinkLight,
                     borderRadius: BorderRadius.circular(12),
@@ -136,18 +136,24 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      onPressed: () {
-                        Navigator.push(context, 
-                        MaterialPageRoute(builder: (context) => const OtpScreen(phoneNumber: '',)));
-                      },
-                      child: const Text(
-                        'Send OTP',
-                        style: TextStyle(
-                          color: AppColors.kWhite,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      onPressed: _isLoading ? null : _login,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Send OTP',
+                              style: TextStyle(
+                                color: AppColors.kWhite,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -187,8 +193,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Navigator.push(context, 
-                          MaterialPageRoute(builder: (context) => const CreateAccountScreen()));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const CreateAccountScreen()),
+                          );
                         },
                         child: const Text(
                           'Sign Up Now',
@@ -236,10 +246,70 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  // ------------------------------------------------------------------------
+  // LOGIC
+  // ------------------------------------------------------------------------
+  Future<void> _login() async {
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter your mobile number")),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      const String staticPassword = "password123";
+
+      final response = await _authService.login(
+        emailOrPhone: phone,
+        password: staticPassword,
+      );
+
+      print("🔹 Success : ${response.success}");
+      print("🔹 Message : ${response.message}");
+      print("🔹 Token   : ${response.token}");
+      print("🔹 Organiser ID   : ${response.organiser.id}");
+      print("🔹 Organiser Email: ${response.organiser.email}");
+      print("🔹 Organiser Phone: ${response.organiser.phoneNo}");
+      print("🔹 Organisation    : ${response.organiser.organisationName}");
+
+      if (response.success) {
+        // ✅ Save organiser ID and other details in SharedPreferences
+        await AppPreferences.setOrganiserId(response.organiser.id);
+        await AppPreferences.setToken(response.token);
+        await AppPreferences.setOrganiserDetails(
+          email: response.organiser.email,
+          phone: response.organiser.phoneNo,
+          organisationName: response.organiser.organisationName,
+        );
+
+        // ✅ Navigate to OTP screen (as originally intended)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpScreen(phoneNumber: phone),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.message)),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 }
 
-/// Country-code chip ("+91") joined with the mobile number input,
-/// styled with the app's pink border palette.
+/// Country-code chip ("+91") joined with the mobile number input.
 class _MobileNumberField extends StatelessWidget {
   const _MobileNumberField({required this.controller});
 

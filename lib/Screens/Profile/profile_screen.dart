@@ -1,5 +1,8 @@
 import 'package:fizma/Screens/Auth/login_new.dart';
+import 'package:fizma/Screens/Payment_Screens/Payment_screen.dart';
 import 'package:fizma/Screens/Profile/edit_profile.dart';
+import 'package:fizma/Screens/Profile/kyc/buisness_form.dart';
+import 'package:fizma/Screens/navbar/navbar.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 // Import your LoginScreen here
@@ -207,21 +210,30 @@ class ProfileScreen extends StatelessWidget {
             iconBg: AppColors.chipViewBg,
             iconColor: AppColors.chipViewFg,
             title: 'Business Information',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(context, 
+              MaterialPageRoute(builder: (context) => const BusinessOnboardingFlow()));
+            },
           ),
           _buildMenuItem(
             icon: Icons.calendar_today_outlined,
             iconBg: AppColors.statPurpleBg,
             iconColor: AppColors.statPurpleFg,
             title: 'My Events',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(context, 
+              MaterialPageRoute(builder: (context) => const EventsNavBar(initialIndex: 1)));
+            },
           ),
           _buildMenuItem(
             icon: Icons.account_balance_wallet_outlined,
             iconBg: AppColors.statGreenBg,
             iconColor: AppColors.statGreenFg,
             title: 'Payment',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(context, 
+              MaterialPageRoute(builder: (context) => const PaymentScreen()));
+            },
           ),
           _buildMenuItem(
             icon: Icons.notifications_none_outlined,

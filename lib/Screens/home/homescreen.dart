@@ -1,6 +1,7 @@
 import 'package:fizma/Screens/Payment_Screens/Payment_screen.dart';
 import 'package:fizma/Screens/add_event/add_event_screen.dart';
 import 'package:fizma/Screens/home/QuickActionCard.dart';
+import 'package:fizma/Screens/home/components/live_analytics_screen.dart';
 import 'package:fizma/Screens/home/components/recentevent_card.dart';
 import 'package:fizma/Screens/home/components/stats_card.dart';
 import 'package:fizma/utils/appcolors.dart';
@@ -142,6 +143,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           iconFg: AppColors.statOrangeFg,
                           label: 'Reports',
                           onTap: () {},
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: QuickActionCard(
+                          icon: Icons.drafts,
+                          iconBg: AppColors.statPinkFg,
+                          iconFg: AppColors.scaffoldBg,
+                          label: 'Draft Event',
+                          onTap: () {
+                            Navigator.push(context, 
+                            MaterialPageRoute(builder: (context) => AddEventScreen()));
+                          },
                         ),
                       ),
                     ],
@@ -520,7 +534,10 @@ class _PromoBanner extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(context, 
+              MaterialPageRoute(builder: (context) => const LiveAnalyticsScreen()));
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: AppColors.primaryRed,
