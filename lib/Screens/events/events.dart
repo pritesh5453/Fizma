@@ -33,10 +33,7 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
       'title': 'Upcoming Events',
       'subtitle': 'Events scheduled for the future',
     },
-    'History': {
-      'title': 'Past Events',
-      'subtitle': 'View your past analytics',
-    },
+    'History': {'title': 'Past Events', 'subtitle': 'View your past analytics'},
   };
 
   List<EventData> events = [];
@@ -114,14 +111,14 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
         );
         break;
       case 'edit':
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Edit: ${event.title}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Edit: ${event.title}')));
         break;
       case 'delete':
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Delete: ${event.title}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Delete: ${event.title}')));
         break;
     }
   }
@@ -191,59 +188,59 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : errorMessage != null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.error_outline,
-                                  size: 48, color: Colors.redAccent),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Error loading events',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                errorMessage!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: _fetchEvents,
-                                child: const Text('Retry'),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.redAccent,
                           ),
-                        )
-                      : events.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No events found for this status',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            )
-                          : GridView.builder(
-                              physics: const BouncingScrollPhysics(),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 12,
-                                childAspectRatio: 0.76,
-                              ),
-                              itemCount: events.length,
-                              itemBuilder: (context, index) {
-                                final event = events[index];
-                                return _buildEventCard(event, index);
-                              },
+                          const SizedBox(height: 12),
+                          Text(
+                            'Error loading events',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: _fetchEvents,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : events.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No events found for this status',
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    )
+                  : GridView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.76,
+                          ),
+                      itemCount: events.length,
+                      itemBuilder: (context, index) {
+                        final event = events[index];
+                        return _buildEventCard(event, index);
+                      },
+                    ),
             ),
           ),
         ],
@@ -276,7 +273,11 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: isSelected ? Colors.white : Colors.black87),
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : Colors.black87,
+            ),
             const SizedBox(width: 6),
             Text(
               title,
@@ -335,16 +336,19 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
                 fit: StackFit.expand,
                 children: [
                   event.bannerImage.isNotEmpty
-                      ?Image.network(
-  "${ApiEndpoints.baseUrl}${event.bannerImage}",
-  fit: BoxFit.cover,
-)
+                      ? Image.network(
+                          "${ApiEndpoints.baseUrl}${event.bannerImage}",
+                          fit: BoxFit.cover,
+                        )
                       : Container(color: Colors.grey.shade200),
                   Positioned(
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: badgeColor,
                         borderRadius: BorderRadius.circular(10),
@@ -376,7 +380,10 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
                     top: 8,
                     right: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.5),
                         borderRadius: BorderRadius.circular(10),
@@ -427,13 +434,18 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
                               size: 16,
                               color: Colors.black54,
                             ),
-                            onSelected: (value) => _onMenuSelected(value, index),
+                            onSelected: (value) =>
+                                _onMenuSelected(value, index),
                             itemBuilder: (context) => [
                               const PopupMenuItem(
                                 value: 'preview',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.visibility_outlined, size: 18, color: Colors.blue),
+                                    Icon(
+                                      Icons.visibility_outlined,
+                                      size: 18,
+                                      color: Colors.blue,
+                                    ),
                                     SizedBox(width: 8),
                                     Text('Preview'),
                                   ],
@@ -443,7 +455,11 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
                                 value: 'edit',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.edit_outlined, size: 18, color: Colors.green),
+                                    Icon(
+                                      Icons.edit_outlined,
+                                      size: 18,
+                                      color: Colors.green,
+                                    ),
                                     SizedBox(width: 8),
                                     Text('Edit'),
                                   ],
@@ -453,7 +469,11 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
                                 value: 'delete',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                    Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                      color: Colors.red,
+                                    ),
                                     SizedBox(width: 8),
                                     Text('Delete'),
                                   ],
@@ -472,11 +492,18 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.location_on_outlined, size: 12, color: Colors.grey),
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 12,
+                          color: Colors.grey,
+                        ),
                         const SizedBox(width: 2),
                         Text(
                           event.location ?? 'No location',
-                          style: const TextStyle(fontSize: 10, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
@@ -487,7 +514,10 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Sold', style: TextStyle(fontSize: 9, color: Colors.grey)),
+                            const Text(
+                              'Sold',
+                              style: TextStyle(fontSize: 9, color: Colors.grey),
+                            ),
                             const SizedBox(height: 1),
                             Text(
                               soldText,
@@ -502,7 +532,10 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            const Text('Revenue', style: TextStyle(fontSize: 9, color: Colors.grey)),
+                            const Text(
+                              'Revenue',
+                              style: TextStyle(fontSize: 9, color: Colors.grey),
+                            ),
                             const SizedBox(height: 1),
                             Text(
                               revenueText,

@@ -2,32 +2,73 @@ import 'package:fizma/Screens/add_event/create_ticket/PreviewTicketScreen.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
+// Model for a single "Additional information" field block
+class _AdditionalField {
+  final TextEditingController fieldNameController = TextEditingController();
+  final TextEditingController maxLengthController =
+      TextEditingController(text: '1');
+  bool mandatory = true;
+  bool numbersOnly = false;
+  bool lettersSigns = false;
+  bool boolean = false;
+  bool limitLength = false;
+
+  static const int maxCharacterLimit = 500;
+}
+
 class CreateTicketDetailsScreen extends StatefulWidget {
-  const CreateTicketDetailsScreen({super.key});
+  final int capacity; // receive from previous screen
+  const CreateTicketDetailsScreen({super.key, required this.capacity});
 
   @override
-  State<CreateTicketDetailsScreen> createState() => _CreateTicketDetailsScreenState();
+  State<CreateTicketDetailsScreen> createState() =>
+      _CreateTicketDetailsScreenState();
 }
 
 class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
-  final TextEditingController ticketNameController = TextEditingController(text: 'VIP PASS');
-  final TextEditingController totalTicketsController = TextEditingController(text: '1');
-  final TextEditingController ticketPriceController = TextEditingController(text: '500');
-  final TextEditingController maxPersonsController = TextEditingController(text: '1');
-  final TextEditingController eventCapacityController = TextEditingController(text: '500');
+  final TextEditingController ticketNameController =
+      TextEditingController(text: 'VIP PASS');
+  final TextEditingController totalTicketsController =
+      TextEditingController(text: '1');
+  final TextEditingController ticketPriceController =
+      TextEditingController(text: '500');
+  final TextEditingController maxPersonsController =
+      TextEditingController(text: '1');
+  late final TextEditingController eventCapacityController;
   final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController belowThresholdController = TextEditingController(text: '10');
-  final TextEditingController increaseByController = TextEditingController(text: '5');
-  final TextEditingController advancePercentController = TextEditingController(text: '50');
-  final TextEditingController eventStartController = TextEditingController(text: '29 Jan 2025');
-  final TextEditingController eventEndController = TextEditingController(text: '30 Jan 2025');
-  final TextEditingController minTicketsController = TextEditingController(text: '1');
-  final TextEditingController maxTicketsController = TextEditingController(text: '200');
+  final TextEditingController belowThresholdController =
+      TextEditingController(text: '10');
+  final TextEditingController increaseByController =
+      TextEditingController(text: '5');
+  final TextEditingController advancePercentController =
+      TextEditingController(text: '50');
+  final TextEditingController eventStartController =
+      TextEditingController(text: '29 Jan 2025');
+  final TextEditingController eventEndController =
+      TextEditingController(text: '30 Jan 2025');
+  final TextEditingController minTicketsController =
+      TextEditingController(text: '1');
+  final TextEditingController maxTicketsController =
+      TextEditingController(text: '200');
+
+  // Guest list – now includes mobile, name, email (optional)
+  final List<Map<String, TextEditingController>> guestControllers = [
+    {
+      'mobile': TextEditingController(text: ''),
+      'name': TextEditingController(text: 'Guest 1'),
+      'email': TextEditingController(text: ''), // new optional email
+    }
+  ];
 
   bool maxPersonsToggle = false;
   bool dynamicPricing = true;
   bool advancePayment = true;
   bool ticketActive = true;
+  bool freeTicket = false;
+
+  // ---------- Additional Information ----------
+  bool additionalInfoToggle = false;
+  final List<_AdditionalField> additionalFields = [_AdditionalField()];
 
   int maleCount = 0;
   int femaleCount = 0;
@@ -39,6 +80,30 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
       'price': TextEditingController(),
     },
   ];
+
+  // ---------- Age restriction ----------
+  String _selectedAgeRestriction = 'All Ages';
+  final List<String> _ageOptions = ['All Ages', '5+', '18+', '21+'];
+
+  // Description character limit
+  static const int _descriptionMaxLength = 300;
+  int _descriptionLength = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    eventCapacityController =
+        TextEditingController(text: widget.capacity.toString());
+    // Add listener for description length
+    descriptionController.addListener(_updateDescriptionLength);
+    _updateDescriptionLength();
+  }
+
+  void _updateDescriptionLength() {
+    setState(() {
+      _descriptionLength = descriptionController.text.length;
+    });
+  }
 
   @override
   void dispose() {
@@ -55,9 +120,18 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
     eventEndController.dispose();
     minTicketsController.dispose();
     maxTicketsController.dispose();
+    for (var guest in guestControllers) {
+      guest['mobile']!.dispose();
+      guest['name']!.dispose();
+      guest['email']!.dispose();
+    }
     for (final a in addOns) {
       a['title']!.dispose();
       a['price']!.dispose();
+    }
+    for (final f in additionalFields) {
+      f.fieldNameController.dispose();
+      f.maxLengthController.dispose();
     }
     super.dispose();
   }
@@ -81,7 +155,8 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _sectionHeader(Icons.confirmation_number_outlined, 'Ticket Details'),
+                      _sectionHeader(
+                          Icons.confirmation_number_outlined, 'Ticket Details'),
                       const SizedBox(height: 14),
 
                       _label('Ticket Name'),
@@ -91,6 +166,22 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                         trailingIcon: Icons.delete_outline,
                       ),
                       const SizedBox(height: 16),
+
+                      // Free Ticket Toggle
+                      _toggleRow(
+                        label: 'Free Ticket',
+                        value: freeTicket,
+                        onChanged: (v) {
+                          setState(() {
+                            freeTicket = v;
+                            if (freeTicket) {
+                              ticketPriceController.text = '0';
+                            }
+                          });
+                        },
+                        subtitle: 'Make this ticket free of cost',
+                      ),
+                      const SizedBox(height: 8),
 
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,7 +203,11 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                               children: [
                                 _label('Ticket Price'),
                                 const SizedBox(height: 8),
-                                _textField(controller: ticketPriceController, prefixText: '₹ '),
+                                _textField(
+                                  controller: ticketPriceController,
+                                  prefixText: '₹ ',
+                                  enabled: !freeTicket,
+                                ),
                               ],
                             ),
                           ),
@@ -121,13 +216,48 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                       const SizedBox(height: 8),
                       Row(
                         children: const [
-                          Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.kRed),
+                          Icon(Icons.warning_amber_rounded,
+                              size: 14, color: AppColors.kRed),
                           SizedBox(width: 6),
                           Text(
                             'Maximum free ticket limit exceeded',
-                            style: TextStyle(fontSize: 11.5, color: AppColors.kRed),
+                            style: TextStyle(
+                                fontSize: 11.5, color: AppColors.kRed),
                           ),
                         ],
+                      ),
+                       const SizedBox(height: 18),
+
+                      // ---------- Event Capacity (read-only) ----------
+                      Row(
+                        children: const [
+                          Icon(Icons.person_outline,
+                              size: 16, color: AppColors.kTextDark),
+                          SizedBox(width: 6),
+                          Text(
+                            'Event Capacity',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.kTextDark),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 46,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.kChipBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.kBorder, width: 1.2),
+                        ),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          eventCapacityController.text,
+                          style: const TextStyle(
+                              fontSize: 14, color: AppColors.kTextDark),
+                        ),
                       ),
                       const SizedBox(height: 18),
 
@@ -135,29 +265,22 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                         icon: Icons.person_outline,
                         label: 'Max Persons per Ticket',
                         value: maxPersonsToggle,
-                        onChanged: (v) => setState(() => maxPersonsToggle = v),
+                        onChanged: (v) =>
+                            setState(() => maxPersonsToggle = v),
                       ),
                       const SizedBox(height: 8),
                       _textField(controller: maxPersonsController),
                       const SizedBox(height: 18),
 
-                      Row(
-                        children: const [
-                          Icon(Icons.person_outline, size: 16, color: AppColors.kTextDark),
-                          SizedBox(width: 6),
-                          Text(
-                            'Event Capacity',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      _textField(controller: eventCapacityController),
+                      // ---------- Guest List (Mobile, Name, Email - Vertical) ----------
+                      _guestListCard(),
+                     
                       const SizedBox(height: 18),
 
+                      // ---------- Age Restriction Dropdown ----------
                       _label('Age Restriction'),
                       const SizedBox(height: 8),
-                      _dropdownField('All Ages'),
+                      _ageRestrictionDropdown(),
                       const SizedBox(height: 18),
 
                       Center(child: _label('Gender Allocation(optional)')),
@@ -165,6 +288,7 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                       _genderAllocationCard(),
                       const SizedBox(height: 18),
 
+                      // ---------- Description with character limit ----------
                       _label('Description'),
                       const SizedBox(height: 8),
                       _descriptionBox(),
@@ -175,7 +299,8 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                         value: dynamicPricing,
                         bold: true,
                         onChanged: (v) => setState(() => dynamicPricing = v),
-                        subtitle: 'Automatically increase ticket price when availability becomes low.',
+                        subtitle:
+                            'Automatically increase ticket price when availability becomes low.',
                       ),
                       const SizedBox(height: 14),
 
@@ -199,7 +324,9 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                               children: [
                                 _label('Increase by'),
                                 const SizedBox(height: 8),
-                                _textField(controller: increaseByController, suffixText: '%'),
+                                _textField(
+                                    controller: increaseByController,
+                                    suffixText: '%'),
                               ],
                             ),
                           ),
@@ -209,20 +336,9 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                       _dynamicPricingSummaryCard(),
                       const SizedBox(height: 20),
 
-                      _toggleRow(
-                        label: 'Advance Payment',
-                        value: advancePayment,
-                        bold: true,
-                        onChanged: (v) => setState(() => advancePayment = v),
-                        subtitle: 'Add your advance payment for confirming booking',
-                      ),
-                      const SizedBox(height: 14),
-                      _label('Advance Percentage'),
-                      const SizedBox(height: 8),
-                      _textField(controller: advancePercentController, suffixText: '%'),
-                      const SizedBox(height: 22),
-
-                      _sectionHeader(Icons.event_available_outlined, 'Availability', muted: true),
+                      _sectionHeader(Icons.event_available_outlined,
+                          'Availability',
+                          muted: true),
                       const SizedBox(height: 14),
 
                       Row(
@@ -289,6 +405,11 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
 
                       _addOnCard(),
                       const SizedBox(height: 18),
+
+                      // ---------- Additional Information ----------
+                      _additionalInfoSection(),
+                      const SizedBox(height: 18),
+
                       const Divider(color: AppColors.kBorder, height: 1),
                       const SizedBox(height: 16),
 
@@ -340,7 +461,9 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                   children: [
                     Text(
                       'For Wed, 29 Jan 2025 | 03:58PM',
-                      style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.45)),
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.kTextDark.withOpacity(0.45)),
                     ),
                   ],
                 ),
@@ -350,14 +473,15 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
           const Spacer(),
           Padding(
             padding: const EdgeInsets.only(top: 12, right: 4),
-            child: Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.kTextDark.withOpacity(0.4)),
+            child: Icon(Icons.calendar_today_outlined,
+                size: 16, color: AppColors.kTextDark.withOpacity(0.4)),
           ),
         ],
       ),
     );
   }
 
-  // ---------- Section header with leading icon ----------
+  // ---------- Section header ----------
   Widget _sectionHeader(IconData icon, String text, {bool muted = false}) {
     final color = muted ? AppColors.kTextDark.withOpacity(0.55) : AppColors.kRed;
     return Row(
@@ -393,12 +517,15 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
     String? prefixText,
     String? suffixText,
     IconData? trailingIcon,
+    bool enabled = true,
+    TextInputType? keyboardType,
+    ValueChanged<String>? onChanged,
   }) {
     return Container(
       height: 46,
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: AppColors.kWhite,
+        color: enabled ? AppColors.kWhite : AppColors.kChipBg,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.kBorder, width: 1.2),
       ),
@@ -406,10 +533,14 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
       child: Row(
         children: [
           if (prefixText != null)
-            Text(prefixText, style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
+            Text(prefixText,
+                style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
           Expanded(
             child: TextField(
               controller: controller,
+              enabled: enabled,
+              keyboardType: keyboardType,
+              onChanged: onChanged,
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
@@ -418,7 +549,8 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
             ),
           ),
           if (suffixText != null)
-            Text(suffixText, style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
+            Text(suffixText,
+                style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
           if (trailingIcon != null) ...[
             const SizedBox(width: 6),
             Icon(trailingIcon, size: 17, color: AppColors.kRed),
@@ -428,8 +560,8 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
     );
   }
 
-  // ---------- Dropdown-style field ----------
-  Widget _dropdownField(String value) {
+  // ---------- Age Restriction Dropdown ----------
+  Widget _ageRestrictionDropdown() {
     return Container(
       height: 46,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -438,17 +570,28 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.kBorder, width: 1.2),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(value, style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
-          const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.kHint),
-        ],
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedAgeRestriction,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.kHint),
+          items: _ageOptions.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value, style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
+            );
+          }).toList(),
+          onChanged: (newValue) {
+            setState(() {
+              _selectedAgeRestriction = newValue!;
+            });
+          },
+        ),
       ),
     );
   }
 
-  // ---------- Toggle row (label [+subtitle] + switch) ----------
+  // ---------- Toggle row ----------
   Widget _toggleRow({
     IconData? icon,
     required String label,
@@ -471,7 +614,7 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                 label,
                 style: TextStyle(
                   fontSize: bold ? 14.5 : 13,
-                  fontWeight: bold ? FontWeight.w700 : FontWeight.w700,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.kTextDark,
                 ),
               ),
@@ -487,14 +630,15 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.5)),
+            style: TextStyle(
+                fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.5)),
           ),
         ],
       ],
     );
   }
 
-  // ---------- Gender allocation bordered card ----------
+  // ---------- Gender allocation card ----------
   Widget _genderAllocationCard() {
     return Container(
       width: double.infinity,
@@ -511,7 +655,8 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
             iconBg: const Color(0xFF4472D8),
             label: 'Male',
             count: maleCount,
-            onDecrement: () => setState(() => maleCount = (maleCount - 1).clamp(0, 999)),
+            onDecrement: () =>
+                setState(() => maleCount = (maleCount - 1).clamp(0, 999)),
             onIncrement: () => setState(() => maleCount++),
           ),
           const Divider(height: 1, color: AppColors.kBorder),
@@ -520,7 +665,8 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
             iconBg: AppColors.primaryRedDark,
             label: 'Female',
             count: femaleCount,
-            onDecrement: () => setState(() => femaleCount = (femaleCount - 1).clamp(0, 999)),
+            onDecrement: () =>
+                setState(() => femaleCount = (femaleCount - 1).clamp(0, 999)),
             onIncrement: () => setState(() => femaleCount++),
           ),
           const Divider(height: 1, color: AppColors.kBorder),
@@ -529,7 +675,8 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
             iconBg: const Color(0xFF3E8E5B),
             label: 'Other',
             count: otherCount,
-            onDecrement: () => setState(() => otherCount = (otherCount - 1).clamp(0, 999)),
+            onDecrement: () =>
+                setState(() => otherCount = (otherCount - 1).clamp(0, 999)),
             onIncrement: () => setState(() => otherCount++),
           ),
         ],
@@ -559,7 +706,10 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.kTextDark),
             ),
           ),
           _counterButton(icon: Icons.remove, onTap: onDecrement),
@@ -568,7 +718,10 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
             child: Text(
               '$count',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.kTextDark),
             ),
           ),
           _counterButton(icon: Icons.add, onTap: onIncrement),
@@ -594,7 +747,7 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
     );
   }
 
-  // ---------- Description textarea ----------
+  // ---------- Description box with counter ----------
   Widget _descriptionBox() {
     return Container(
       decoration: BoxDecoration(
@@ -603,21 +756,40 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
         border: Border.all(color: AppColors.kBorder, width: 1.2),
       ),
       padding: const EdgeInsets.all(12),
-      child: TextField(
-        controller: descriptionController,
-        maxLines: 3,
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          isDense: true,
-          hintText: "What's included in this ticket...",
-          hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13.5),
-        ),
-        style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: descriptionController,
+            maxLines: 3,
+            maxLength: _descriptionMaxLength,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              hintText: "What's included in this ticket...",
+              hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13.5),
+              counterText: '', // We'll show custom counter below
+            ),
+            style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
+          ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Text(
+              '$_descriptionLength / $_descriptionMaxLength',
+              style: TextStyle(
+                fontSize: 12,
+                color: _descriptionLength > _descriptionMaxLength
+                    ? AppColors.kRed
+                    : AppColors.kHint,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ---------- Dynamic pricing summary card (Current -> Triggered) ----------
+  // ---------- Dynamic pricing summary ----------
   Widget _dynamicPricingSummaryCard() {
     return Container(
       width: double.infinity,
@@ -632,11 +804,17 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Current Price:', style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.6))),
+                Text('Current Price:',
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.kTextDark.withOpacity(0.6))),
                 const SizedBox(height: 4),
                 Text(
                   '₹ ${ticketPriceController.text.isEmpty ? '0' : ticketPriceController.text}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kRed),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.kRed),
                 ),
               ],
             ),
@@ -646,25 +824,35 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('Triggered Price:', style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.6))),
+                Text('Triggered Price:',
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.kTextDark.withOpacity(0.6))),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     const Text(
                       '₹ 525',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kRed),
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.kRed),
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: AppColors.kRed,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: const Text(
                         'Auto Applied',
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.kWhite),
+                        style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.kWhite),
                       ),
                     ),
                   ],
@@ -677,7 +865,146 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
     );
   }
 
-  // ---------- Add-on section card ----------
+  // ---------- Guest List Card (Vertical: Mobile, Name, Email) ----------
+  Widget _guestListCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.kBorder, width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Guest List',
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.kTextDark),
+          ),
+          const SizedBox(height: 14),
+          ...guestControllers.asMap().entries.map((entry) {
+            int index = entry.key;
+            Map<String, TextEditingController> guest = entry.value;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppColors.kChipBg.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.kBorder, width: 0.5),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Mobile number field
+                  _label('Mobile Number'),
+                  const SizedBox(height: 6),
+                  _textField(
+                    controller: guest['mobile']!,
+                    keyboardType: TextInputType.phone,
+                    prefixText: '+91 ',
+                  ),
+                  const SizedBox(height: 12),
+                  // Name field
+                  _label('Guest Name'),
+                  const SizedBox(height: 6),
+                  _textField(
+                    controller: guest['name']!,
+                  ),
+                  const SizedBox(height: 12),
+                  // Email field (optional)
+                  _label('Email (optional)'),
+                  const SizedBox(height: 6),
+                  _textField(
+                    controller: guest['email']!,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 10),
+                  // Delete button
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: InkWell(
+                      onTap: () {
+                        if (guestControllers.length > 1) {
+                          setState(() {
+                            guest['mobile']!.dispose();
+                            guest['name']!.dispose();
+                            guest['email']!.dispose();
+                            guestControllers.removeAt(index);
+                          });
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.kRed.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.delete_outline,
+                                color: AppColors.kRed, size: 16),
+                            SizedBox(width: 4),
+                            Text(
+                              'Remove',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.kRed),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  int next = guestControllers.length + 1;
+                  guestControllers.add({
+                    'mobile': TextEditingController(text: ''),
+                    'name': TextEditingController(text: 'Guest $next'),
+                    'email': TextEditingController(text: ''),
+                  });
+                });
+              },
+              style: OutlinedButton.styleFrom(
+                backgroundColor: AppColors.kWhite,
+                side: const BorderSide(color: AppColors.kRed, width: 1.3),
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: const Icon(Icons.add, size: 16, color: AppColors.kRed),
+              label: const Text(
+                'Add Guest',
+                style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.kRed),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Add-on card ----------
   Widget _addOnCard() {
     return Container(
       width: double.infinity,
@@ -692,17 +1019,22 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
         children: [
           const Text(
             'Add-on',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.kTextDark),
           ),
           const SizedBox(height: 14),
           Row(
             children: const [
               Expanded(
-                child: Text('Title', style: TextStyle(fontSize: 12, color: AppColors.kHint)),
+                child: Text('Title',
+                    style: TextStyle(fontSize: 12, color: AppColors.kHint)),
               ),
               SizedBox(width: 12),
               Expanded(
-                child: Text('Price (₹)', style: TextStyle(fontSize: 12, color: AppColors.kHint)),
+                child: Text('Price (₹)',
+                    style: TextStyle(fontSize: 12, color: AppColors.kHint)),
               ),
               SizedBox(width: 38),
             ],
@@ -729,7 +1061,8 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: const Padding(
                         padding: EdgeInsets.all(6),
-                        child: Icon(Icons.delete_outline, color: AppColors.kRed, size: 20),
+                        child: Icon(Icons.delete_outline,
+                            color: AppColors.kRed, size: 20),
                       ),
                     ),
                   ],
@@ -751,12 +1084,16 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
               style: OutlinedButton.styleFrom(
                 backgroundColor: AppColors.kWhite,
                 side: const BorderSide(color: AppColors.kRed, width: 1.3),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               icon: const Icon(Icons.add, size: 16, color: AppColors.kRed),
               label: const Text(
                 'Add More',
-                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.kRed),
+                style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.kRed),
               ),
             ),
           ),
@@ -765,7 +1102,242 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
     );
   }
 
-  // ---------- Bottom Back / Submit Buttons ----------
+  // ---------- Additional Information section ----------
+  Widget _additionalInfoSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.kBorder, width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Additional information',
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.kTextDark),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Ask custom questions when a buyer selects this ticket type.',
+                      style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.kTextDark.withOpacity(0.5)),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: additionalInfoToggle,
+                onChanged: (v) => setState(() => additionalInfoToggle = v),
+                activeColor: AppColors.kRed,
+              ),
+            ],
+          ),
+          if (additionalInfoToggle) ...[
+            const SizedBox(height: 14),
+            ...additionalFields.asMap().entries.map((entry) {
+              return _additionalFieldCard(entry.key, entry.value);
+            }).toList(),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    additionalFields.add(_AdditionalField());
+                  });
+                },
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: AppColors.kWhite,
+                  side: const BorderSide(color: AppColors.kRed, width: 1.3),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.add, size: 16, color: AppColors.kRed),
+                label: const Text(
+                  'Add field',
+                  style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.kRed),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _additionalFieldCard(int index, _AdditionalField field) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.kChipBg.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.kBorder, width: 0.5),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: _label('Field name')),
+              InkWell(
+                onTap: () {
+                  if (additionalFields.length > 1) {
+                    setState(() {
+                      field.fieldNameController.dispose();
+                      additionalFields.removeAt(index);
+                    });
+                  }
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.delete_outline,
+                      color: AppColors.kRed, size: 18),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          _textField(
+            controller: field.fieldNameController,
+          ),
+          const SizedBox(height: 12),
+          _toggleRow(
+            label: 'Mandatory',
+            value: field.mandatory,
+            onChanged: (v) => setState(() => field.mandatory = v),
+          ),
+          const SizedBox(height: 12),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _miniToggleChip(
+                    label: 'Numbers only',
+                    value: field.numbersOnly,
+                    onChanged: (v) => setState(() => field.numbersOnly = v),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _miniToggleChip(
+                    label: 'Letters & signs',
+                    value: field.lettersSigns,
+                    onChanged: (v) => setState(() => field.lettersSigns = v),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _miniToggleChip(
+                    label: 'Boolean',
+                    value: field.boolean,
+                    onChanged: (v) => setState(() => field.boolean = v),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _miniToggleChip(
+                    label: 'Limit length',
+                    value: field.limitLength,
+                    onChanged: (v) => setState(() => field.limitLength = v),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (field.limitLength) ...[
+            const SizedBox(height: 12),
+            _textField(
+              controller: field.maxLengthController,
+              keyboardType: TextInputType.number,
+              onChanged: (val) {
+                final parsed = int.tryParse(val);
+                if (parsed != null && parsed > _AdditionalField.maxCharacterLimit) {
+                  final capped = _AdditionalField.maxCharacterLimit.toString();
+                  field.maxLengthController.value = TextEditingValue(
+                    text: capped,
+                    selection: TextSelection.collapsed(offset: capped.length),
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Max characters',
+              style: TextStyle(
+                  fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.5)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _miniToggleChip({
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.kBorder, width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            maxLines: 2,
+            style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.kTextDark),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Transform.scale(
+              scale: 0.8,
+              alignment: Alignment.centerLeft,
+              child: Switch(
+                value: value,
+                onChanged: onChanged,
+                activeColor: AppColors.kRed,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Bottom Buttons ----------
   Widget _buildBottomButtons(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -780,11 +1352,15 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                 style: OutlinedButton.styleFrom(
                   backgroundColor: AppColors.kWhite,
                   side: const BorderSide(color: AppColors.kRed, width: 1.4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text(
                   'Back',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.kRed),
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.kRed),
                 ),
               ),
             ),
@@ -803,7 +1379,8 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                             ? 'TechTalk 2025'
                             : ticketNameController.text,
                         seats: int.tryParse(eventCapacityController.text) ?? 100,
-                        totalPrice: double.tryParse(ticketPriceController.text) ?? 499,
+                        totalPrice: double.tryParse(ticketPriceController.text) ??
+                            499,
                       ),
                     ),
                   );
@@ -812,11 +1389,15 @@ class _CreateTicketDetailsScreenState extends State<CreateTicketDetailsScreen> {
                   backgroundColor: AppColors.kRed,
                   foregroundColor: AppColors.kWhite,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text(
                   'Submit',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.kWhite),
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.kWhite),
                 ),
               ),
             ),

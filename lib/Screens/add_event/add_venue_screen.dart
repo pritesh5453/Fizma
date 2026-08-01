@@ -1,9 +1,23 @@
 import 'package:fizma/Screens/add_event/add_event_slot.dart';
 import 'package:fizma/Screens/add_event/create_table_screen.dart';
+import 'package:fizma/Screens/add_event/create_ticket.dart';
 import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
 import 'package:fizma/Screens/add_event/event_slot.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
+
+// ---------- Data model for venue with capacity and buffer ----------
+class VenueWithCapacity {
+  final VenueOption venue;
+  final int capacity;
+  final int? bufferCapacity; // optional "safety cap"
+
+  VenueWithCapacity({
+    required this.venue,
+    required this.capacity,
+    this.bufferCapacity,
+  });
+}
 
 class VenueOption {
   final String name;
@@ -25,46 +39,58 @@ class AddVenueScreen extends StatefulWidget {
 }
 
 class _AddVenueScreenState extends State<AddVenueScreen> {
-  VenueOption? selectedVenue;
+  VenueWithCapacity? selectedVenueWithCapacity;
   final List<EventSlot> eventSlots = [];
 
   Future<void> _openAddEventSlotSheet() async {
-    if (selectedVenue == null) return;
+    if (selectedVenueWithCapacity == null) return;
     final result = await showModalBottomSheet<EventSlot>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddEventSlotSheet(
-        venueName: selectedVenue!.name,
-        venueCity: selectedVenue!.city,
+        venueName: selectedVenueWithCapacity!.venue.name,
+        venueCity: selectedVenueWithCapacity!.venue.city,
       ),
     );
 
     if (result != null) {
       setState(() {
-        final index = eventSlots.length;
+        int pairNumber = (eventSlots.length ~/ 2) + 1;
         eventSlots.add(EventSlot(
-          title: 'Event ${index + 1}',
+          title: 'Event $pairNumber (Ticket)',
           date: result.date,
           startTime: result.startTime,
           endTime: result.endTime,
           capacity: result.capacity,
-          actionLabel: index.isEven ? 'Create Ticket' : 'Create Table',
+          actionLabel: 'Create Ticket',
+        ));
+        eventSlots.add(EventSlot(
+          title: 'Event $pairNumber (Table)',
+          date: result.date,
+          startTime: result.startTime,
+          endTime: result.endTime,
+          capacity: result.capacity,
+          actionLabel: 'Create Table',
         ));
       });
     }
   }
 
   Future<void> _openVenueLocationSheet() async {
-    final result = await showModalBottomSheet<VenueOption>(
+    final result = await showModalBottomSheet<VenueWithCapacity>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _VenueLocationSheet(initialSelection: selectedVenue),
+      builder: (context) => _VenueLocationSheet(
+        initialSelection: selectedVenueWithCapacity?.venue,
+        initialCapacity: selectedVenueWithCapacity?.capacity,
+        initialBuffer: selectedVenueWithCapacity?.bufferCapacity,
+      ),
     );
 
     if (result != null) {
-      setState(() => selectedVenue = result);
+      setState(() => selectedVenueWithCapacity = result);
     }
   }
 
@@ -90,7 +116,6 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
                     children: [
                       _eventSummaryCard(),
                       const SizedBox(height: 20),
-
                       _label('Select Venue Location'),
                       const SizedBox(height: 10),
                       _outlinedActionButton(
@@ -98,10 +123,9 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
                         label: 'Add New Venue',
                         onTap: _openVenueLocationSheet,
                       ),
-
-                      if (selectedVenue != null) ...[
+                      if (selectedVenueWithCapacity != null) ...[
                         const SizedBox(height: 14),
-                        _venueCard(selectedVenue!),
+                        _venueCard(selectedVenueWithCapacity!),
                       ],
                     ],
                   ),
@@ -155,7 +179,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
     );
   }
 
-  // ---------- Progress Bar (4 segments, step 3 mostly active) ----------
+  // ---------- Progress Bar ----------
   Widget _buildProgressBar() {
     final fills = [1.0, 1.0, 0.15, 0.0];
     return Padding(
@@ -201,7 +225,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
     );
   }
 
-  // ---------- Event summary card at top ----------
+  // ---------- Event summary card ----------
   Widget _eventSummaryCard() {
     return Container(
       width: double.infinity,
@@ -277,7 +301,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
     );
   }
 
-  // ---------- Outlined pill-ish action button ("+ Add New Venue" / "+ Add Event Slot") ----------
+  // ---------- Outlined action button ----------
   Widget _outlinedActionButton({
     required IconData icon,
     required String label,
@@ -317,8 +341,10 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
     );
   }
 
-  // ---------- Selected venue card with stats + Add Event Slot ----------
-  Widget _venueCard(VenueOption venue) {
+  // ---------- Venue card (updated to show buffer) ----------
+  Widget _venueCard(VenueWithCapacity venueWithCap) {
+    final venue = venueWithCap.venue;
+    final buffer = venueWithCap.bufferCapacity;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -358,33 +384,27 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
+          Wrap(
+            spacing: 14,
+            runSpacing: 6,
             children: [
               _statChip(Icons.calendar_today_outlined, '${eventSlots.length} shows'),
-              const SizedBox(width: 14),
-              _statChip(Icons.groups_outlined, '${_totalCapacity()} capacity'),
-              const SizedBox(width: 14),
+              _statChip(Icons.groups_outlined, '${venueWithCap.capacity} cap'),
+              if (buffer != null)
+                _statChip(Icons.shield_outlined, 'Safety: $buffer'),
+              _statChip(Icons.person_outline, '${_totalSlotCapacity()} slot cap'),
               _statChip(Icons.grid_view_rounded, '${_typeCount()} types'),
             ],
           ),
           if (eventSlots.isNotEmpty) ...[
             const SizedBox(height: 14),
-            ...eventSlots.map((slot) => EventSlotCard(
-                  slot: slot,
-                  onActiveChanged: (v) => setState(() => slot.isActive = v),
-                  onActionTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => slot.actionLabel == 'Create Table'
-                            ? const CreateTableDetailsScreen()
-                            : const CreateTicketDetailsScreen(),
-                      ),
-                    );
-                  },
-                  onEditTap: () {},
-                  onDeleteTap: () => setState(() => eventSlots.remove(slot)),
-                )),
+            for (int i = 0; i < eventSlots.length; i += 2)
+              _buildSlotPair(
+                eventSlots[i],
+                eventSlots[i + 1],
+                venueCapacity: venueWithCap.capacity,
+                bufferCapacity: venueWithCap.bufferCapacity, // still passed but not used in screen constructors for now
+              ),
           ],
           const SizedBox(height: 4),
           _outlinedActionButton(
@@ -397,7 +417,233 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
     );
   }
 
-  int _totalCapacity() =>
+  // ---------- Build a combined card for a Ticket and Table pair ----------
+  Widget _buildSlotPair(
+    EventSlot ticketSlot,
+    EventSlot tableSlot, {
+    required int venueCapacity,
+    int? bufferCapacity, // stored for later use, but not passed to screens (yet)
+  }) {
+    final commonDate = ticketSlot.date;
+    final commonStart = ticketSlot.startTime;
+    final commonEnd = ticketSlot.endTime;
+    final commonCapacity = ticketSlot.capacity;
+    final pairNumber = ticketSlot.title.split(' ')[1];
+
+    void deletePair() {
+      setState(() {
+        eventSlots.remove(ticketSlot);
+        eventSlots.remove(tableSlot);
+      });
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.kBorder, width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Date badge + title row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _dateBadge(commonDate),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Event $pairNumber',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.kTextDark,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, size: 12, color: AppColors.kHint),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$commonStart - $commonEnd',
+                          style: const TextStyle(fontSize: 11.5, color: AppColors.kHint),
+                        ),
+                        const SizedBox(width: 10),
+                        const Icon(Icons.groups_outlined, size: 12, color: AppColors.kHint),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$commonCapacity',
+                          style: const TextStyle(fontSize: 11.5, color: AppColors.kHint),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Ticket row - NOTE: bufferCapacity is not passed yet because the screen doesn't accept it.
+          // If you add a bufferCapacity parameter to CreateTicketDetailsScreen, uncomment the line below.
+          _slotActionRow(
+            slot: ticketSlot,
+            label: 'Create Ticket',
+            onActionTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateTicketDetailsScreen(
+                    capacity: venueCapacity,
+                    // bufferCapacity: bufferCapacity, // <-- uncomment after adding parameter
+                  ),
+                ),
+              );
+            },
+            onToggle: (v) => setState(() => ticketSlot.isActive = v),
+            onEdit: () {},
+            onDelete: deletePair,
+          ),
+          const SizedBox(height: 8),
+
+          // Table row - same note
+          _slotActionRow(
+            slot: tableSlot,
+            label: 'Create Table',
+            onActionTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateTableDetailsScreen(
+                    capacity: venueCapacity,
+                    // bufferCapacity: bufferCapacity, // <-- uncomment after adding parameter
+                  ),
+                ),
+              );
+            },
+            onToggle: (v) => setState(() => tableSlot.isActive = v),
+            onEdit: () {},
+            onDelete: deletePair,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Date badge ----------
+  Widget _dateBadge(DateTime date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return Container(
+      width: 44,
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.kPinkLight,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.kBorder, width: 1),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '${date.day}',
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: AppColors.kTextDark,
+            ),
+          ),
+          Text(
+            months[date.month - 1],
+            style: const TextStyle(fontSize: 10, color: AppColors.kHint),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Slot action row (unchanged) ----------
+  Widget _slotActionRow({
+    required EventSlot slot,
+    required String label,
+    required VoidCallback onActionTap,
+    required ValueChanged<bool> onToggle,
+    required VoidCallback onEdit,
+    required VoidCallback onDelete,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 38,
+            child: OutlinedButton.icon(
+              onPressed: onActionTap,
+              style: OutlinedButton.styleFrom(
+                backgroundColor: AppColors.kWhite,
+                side: const BorderSide(color: AppColors.kRed, width: 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              icon: const Icon(Icons.edit_outlined, size: 14, color: AppColors.kRed),
+              label: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.kRed,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Switch(
+          value: slot.isActive,
+          onChanged: onToggle,
+          activeColor: const Color(0xFF22C55E),
+        ),
+        const SizedBox(width: 4),
+        _squareIconButton(icon: Icons.edit_outlined, onTap: onEdit),
+        const SizedBox(width: 8),
+        _squareIconButton(
+          icon: Icons.delete_outline,
+          onTap: onDelete,
+          isDelete: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _squareIconButton({required IconData icon, VoidCallback? onTap, bool isDelete = false}) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.kWhite,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDelete ? AppColors.kRed.withOpacity(0.6) : AppColors.kBorder,
+            width: 1.2,
+          ),
+        ),
+        child: Icon(icon, size: 16, color: isDelete ? AppColors.kRed : AppColors.kTextDark.withOpacity(0.6)),
+      ),
+    );
+  }
+
+  int _totalSlotCapacity() =>
       eventSlots.fold(0, (sum, s) => sum + s.capacity);
 
   int _typeCount() =>
@@ -414,7 +660,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
     );
   }
 
-  // ---------- Bottom Back / Save & Proceed Buttons ----------
+  // ---------- Bottom Buttons ----------
   Widget _buildBottomButtons(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -449,7 +695,10 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
             child: SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(context, 
+                  MaterialPageRoute(builder: (context) => const CreateTicketsScreen()));
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,
                   foregroundColor: AppColors.kWhite,
@@ -476,11 +725,17 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
 }
 
 // =====================================================================
-// Bottom sheet: "Venue Location" search + results + Confirm Venue
+// Bottom sheet: "Venue Location" with capacity + buffer input
 // =====================================================================
 class _VenueLocationSheet extends StatefulWidget {
   final VenueOption? initialSelection;
-  const _VenueLocationSheet({this.initialSelection});
+  final int? initialCapacity;
+  final int? initialBuffer;
+  const _VenueLocationSheet({
+    this.initialSelection,
+    this.initialCapacity,
+    this.initialBuffer,
+  });
 
   @override
   State<_VenueLocationSheet> createState() => _VenueLocationSheetState();
@@ -489,10 +744,25 @@ class _VenueLocationSheet extends StatefulWidget {
 class _VenueLocationSheetState extends State<_VenueLocationSheet> {
   late VenueOption? _selected = widget.initialSelection;
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _capacityController = TextEditingController();
+  final TextEditingController _bufferController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialCapacity != null) {
+      _capacityController.text = widget.initialCapacity.toString();
+    }
+    if (widget.initialBuffer != null) {
+      _bufferController.text = widget.initialBuffer.toString();
+    }
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _capacityController.dispose();
+    _bufferController.dispose();
     super.dispose();
   }
 
@@ -501,6 +771,10 @@ class _VenueLocationSheetState extends State<_VenueLocationSheet> {
     final filtered = _venueOptions
         .where((v) => v.name.toLowerCase().contains(_searchController.text.toLowerCase()))
         .toList();
+
+    final bool isValid = _selected != null &&
+        _capacityController.text.isNotEmpty &&
+        int.tryParse(_capacityController.text) != null;
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
@@ -514,7 +788,6 @@ class _VenueLocationSheetState extends State<_VenueLocationSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // drag handle
             Center(
               child: Container(
                 width: 40,
@@ -553,8 +826,6 @@ class _VenueLocationSheetState extends State<_VenueLocationSheet> {
               ],
             ),
             const SizedBox(height: 14),
-
-            // Search field
             Container(
               height: 46,
               padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -585,8 +856,6 @@ class _VenueLocationSheetState extends State<_VenueLocationSheet> {
               ),
             ),
             const SizedBox(height: 12),
-
-            // Near Me / Recent Searches chips
             Row(
               children: [
                 _pillChip(
@@ -603,10 +872,8 @@ class _VenueLocationSheetState extends State<_VenueLocationSheet> {
               ],
             ),
             const SizedBox(height: 14),
-
-            // Results list
             ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.32),
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.28),
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: filtered.length,
@@ -667,12 +934,98 @@ class _VenueLocationSheetState extends State<_VenueLocationSheet> {
               ),
             ),
             const SizedBox(height: 14),
-
+            // Capacity field
+            Container(
+              height: 46,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: AppColors.kWhite,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.kBorder, width: 1.2),
+              ),
+              child: Row(
+                children: [
+                  const Text(
+                    'Venue Capacity',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.kTextDark,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _capacityController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'Enter capacity',
+                        hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13.5),
+                      ),
+                      style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // NEW: Buffer/Safety Cap field
+            Container(
+              height: 46,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: AppColors.kWhite,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.kBorder, width: 1.2),
+              ),
+              child: Row(
+                children: [
+                  const Text(
+                    'Safety Cap (Optional)',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.kTextDark,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _bufferController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isDense: true,
+                        hintText: 'e.g., 800 – tickets show full at this limit',
+                        hintStyle: TextStyle(color: AppColors.kHint, fontSize: 12),
+                      ),
+                      style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: _selected == null ? null : () => Navigator.pop(context, _selected),
+                onPressed: isValid
+                    ? () {
+                        Navigator.pop(
+                          context,
+                          VenueWithCapacity(
+                            venue: _selected!,
+                            capacity: int.parse(_capacityController.text),
+                            bufferCapacity: _bufferController.text.isNotEmpty
+                                ? int.tryParse(_bufferController.text)
+                                : null,
+                          ),
+                        );
+                      }
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,
                   disabledBackgroundColor: AppColors.kRed.withOpacity(0.4),

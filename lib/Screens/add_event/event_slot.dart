@@ -135,7 +135,7 @@ class EventSlotCard extends StatelessWidget {
               Expanded(
                 child: SizedBox(
                   height: 38,
-                  child: OutlinedButton.icon( 
+                  child: OutlinedButton.icon(
                     onPressed: onActionTap,
                     style: OutlinedButton.styleFrom(
                       backgroundColor: AppColors.kWhite,

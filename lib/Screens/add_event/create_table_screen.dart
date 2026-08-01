@@ -2,7 +2,8 @@ import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class CreateTableDetailsScreen extends StatefulWidget {
-  const CreateTableDetailsScreen({super.key});
+  final int capacity;
+  const CreateTableDetailsScreen({super.key, required this.capacity});
 
   @override
   State<CreateTableDetailsScreen> createState() => _CreateTableDetailsScreenState();
@@ -23,6 +24,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
   final TextEditingController maxGuestController = TextEditingController();
   final TextEditingController pricePerMaleController = TextEditingController();
   final TextEditingController pricePerFemaleController = TextEditingController();
+  // Reservation related
+  final TextEditingController contactNumberController = TextEditingController();
 
   bool tableNameToggle = true;
   bool dynamicPricing = true;
@@ -31,6 +34,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
   bool priceGenderWise = true;
   bool oneTimeCheckIn = true;
   bool tableActive = true;
+  bool reservationEnabled = false; // New toggle
 
   int maleCount = 0;
   int femaleCount = 0;
@@ -45,6 +49,27 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
       'price': TextEditingController(),
     },
   ];
+
+  // Age restriction
+  String _selectedAgeRestriction = 'All Ages';
+  final List<String> _ageOptions = ['All Ages', '5+', '18+', '21+'];
+
+  // Description character limit
+  static const int _descriptionMaxLength = 300;
+  int _descriptionLength = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    descriptionController.addListener(_updateDescriptionLength);
+    _updateDescriptionLength();
+  }
+
+  void _updateDescriptionLength() {
+    setState(() {
+      _descriptionLength = descriptionController.text.length;
+    });
+  }
 
   @override
   void dispose() {
@@ -62,6 +87,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     maxGuestController.dispose();
     pricePerMaleController.dispose();
     pricePerFemaleController.dispose();
+    contactNumberController.dispose();
     for (final a in addOns) {
       a['title']!.dispose();
       a['price']!.dispose();
@@ -88,12 +114,18 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _sectionHeader(Icons.confirmation_number_outlined, 'Table Details'),
-                      const SizedBox(height: 14),
-
+                      // ---------- Table Name (always visible) ----------
                       Row(
                         children: [
-                          const Expanded(child: Text('Table Name', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.kTextDark))),
+                          const Expanded(
+                            child: Text(
+                              'Table Name',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.kTextDark),
+                            ),
+                          ),
                           Switch(
                             value: tableNameToggle,
                             onChanged: (v) => setState(() => tableNameToggle = v),
@@ -105,267 +137,319 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                       _textField(controller: tableNameController),
                       const SizedBox(height: 16),
 
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _label('Total Table'),
-                                const SizedBox(height: 8),
-                                _textField(controller: totalTableController),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _label('Table Price'),
-                                const SizedBox(height: 8),
-                                _textField(controller: tablePriceController, prefixText: '₹ '),
-                              ],
-                            ),
-                          ),
-                        ],
+                      // ---------- Reservation Toggle (always visible) ----------
+                      _toggleRow(
+                        label: 'Reservation',
+                        value: reservationEnabled,
+                        bold: true,
+                        onChanged: (v) => setState(() => reservationEnabled = v),
+                        subtitle: 'Replace online pricing and checkout with a \nphone call button for this table.',
                       ),
-                      const SizedBox(height: 18),
-
-                      Row(
-                        children: const [
-                          Icon(Icons.person_outline, size: 16, color: AppColors.kTextDark),
-                          SizedBox(width: 6),
-                          Text(
-                            'Max Persons per Table',
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
-                          ),
-                        ],
-                      ),
+                      // Show contact number only when reservation is enabled
+                      if (reservationEnabled) ...[
+                        const SizedBox(height: 10),
+                        _label('Contact Number'),
+                        const SizedBox(height: 8),
+                        _textField(
+                          controller: contactNumberController,
+                          hint: 'Enter contact number',
+                          keyboardType: TextInputType.phone,
+                        ),
+                      ],
                       const SizedBox(height: 8),
-                      _textField(controller: maxPersonsController),
-                      const SizedBox(height: 18),
 
-                      _label('Age Restriction'),
-                      const SizedBox(height: 8),
-                      _dropdownField('All Ages'),
-                      const SizedBox(height: 18),
-
-                      _label('Gender Allocation(optional)'),
-                      const SizedBox(height: 10),
-                      _genderAllocationCard(),
-                      const SizedBox(height: 18),
-
-                      _label('Description'),
-                      const SizedBox(height: 8),
-                      _descriptionBox(),
-                      const SizedBox(height: 20),
-
-                      _sectionCard(
-                        child: Column(
+                      // ---------- ALL OTHER FIELDS (hidden when reservation is ON) ----------
+                      if (!reservationEnabled) ...[
+                        const SizedBox(height: 18),
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _toggleRow(
-                              label: 'Dynamic Pricing',
-                              value: dynamicPricing,
-                              bold: true,
-                              onChanged: (v) => setState(() => dynamicPricing = v),
-                              subtitle: 'Automatically increase Table price when availability becomes low.',
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _label('Total Table'),
+                                  const SizedBox(height: 8),
+                                  _textField(controller: totalTableController),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 14),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      _label('When Tables left below'),
-                                      const SizedBox(height: 8),
-                                      _textField(controller: belowThresholdController),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      _label('Increase by'),
-                                      const SizedBox(height: 8),
-                                      _textField(controller: increaseByController, suffixText: '%'),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _label('Table Price'),
+                                  const SizedBox(height: 8),
+                                  _textField(controller: tablePriceController, prefixText: '₹ '),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 14),
-                            _dynamicPricingSummaryCard(),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 20),
+                        const SizedBox(height: 18),
 
-                      _toggleRow(
-                        label: 'Advance Payment',
-                        value: advancePayment,
-                        bold: true,
-                        onChanged: (v) => setState(() => advancePayment = v),
-                        subtitle: 'Add your advance payment for confirming booking',
-                      ),
-                      const SizedBox(height: 14),
-                      _label('Advance Percentage'),
-                      const SizedBox(height: 8),
-                      _textField(controller: advancePercentController, suffixText: '%'),
-                      const SizedBox(height: 22),
+                        Row(
+                          children: const [
+                            Icon(Icons.person_outline, size: 16, color: AppColors.kTextDark),
+                            SizedBox(width: 6),
+                            Text(
+                              'Max Persons per Table',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.kTextDark),
+                            ),
+                          ],
+                        ),
+                        _textField(controller: maxPersonsController),
+                        const SizedBox(height: 18),
 
-                      _sectionHeader(Icons.event_available_outlined, 'Availability', muted: true),
-                      const SizedBox(height: 14),
+                        // Age Restriction Dropdown (proper)
+                        _label('Age Restriction'),
+                        const SizedBox(height: 8),
+                        _ageRestrictionDropdown(),
+                        const SizedBox(height: 18),
 
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _label('Min Table'),
-                                const SizedBox(height: 8),
-                                _textField(controller: minTableController),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _label('Max Table'),
-                                const SizedBox(height: 8),
-                                _textField(controller: maxTableController),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                        _label('Gender Allocation(optional)'),
+                        const SizedBox(height: 10),
+                        _genderAllocationCard(),
+                        const SizedBox(height: 18),
 
-                      _toggleRow(
-                        label: 'Extra Person Add-on',
-                        value: extraPersonAddOn,
-                        bold: true,
-                        onChanged: (v) => setState(() => extraPersonAddOn = v),
-                        subtitle: 'Define the charge applicable for each extra guest.',
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Number Of Extra Guests', style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.55))),
-                                const SizedBox(height: 8),
-                                _textField(controller: extraGuestsController, hint: 'Title'),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Max Number Of Guest', style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.55))),
-                                const SizedBox(height: 8),
-                                _textField(controller: maxGuestController, hint: 'Value'),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                        _label('Description'),
+                        const SizedBox(height: 8),
+                        _descriptionBox(),
+                        const SizedBox(height: 20),
 
-                      _toggleRow(
-                        label: 'Set Price Gender Wise',
-                        value: priceGenderWise,
-                        bold: true,
-                        onChanged: (v) => setState(() => priceGenderWise = v),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _genderMiniCard(
-                              icon: Icons.person,
-                              label: 'Male',
-                              count: genderPriceMaleCount,
-                              onDecrement: () => setState(() => genderPriceMaleCount = (genderPriceMaleCount - 1).clamp(0, 999)),
-                              onIncrement: () => setState(() => genderPriceMaleCount++),
-                            ),
+                        _sectionCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _toggleRow(
+                                label: 'Dynamic Pricing',
+                                value: dynamicPricing,
+                                bold: true,
+                                onChanged: (v) => setState(() => dynamicPricing = v),
+                                subtitle:
+                                    'Automatically increase Table price when availability becomes low.',
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _label('When Tables left below'),
+                                        const SizedBox(height: 8),
+                                        _textField(controller: belowThresholdController),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _label('Increase by'),
+                                        const SizedBox(height: 8),
+                                        _textField(
+                                            controller: increaseByController, suffixText: '%'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              _dynamicPricingSummaryCard(),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _genderMiniCard(
-                              icon: Icons.person,
-                              label: 'Female',
-                              count: genderPriceFemaleCount,
-                              onDecrement: () => setState(() => genderPriceFemaleCount = (genderPriceFemaleCount - 1).clamp(0, 999)),
-                              onIncrement: () => setState(() => genderPriceFemaleCount++),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Price Per Male Guest', style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.55))),
-                                const SizedBox(height: 8),
-                                _textField(controller: pricePerMaleController, hint: 'Value'),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Price Per Female Guest', style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.55))),
-                                const SizedBox(height: 8),
-                                _textField(controller: pricePerFemaleController, hint: 'Value'),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                        ),
+                        const SizedBox(height: 20),
 
-                      _toggleRow(
-                        label: 'One Time Check In Only',
-                        value: oneTimeCheckIn,
-                        bold: true,
-                        onChanged: (v) => setState(() => oneTimeCheckIn = v),
-                      ),
-                      const SizedBox(height: 20),
+                        _toggleRow(
+                          label: 'Advance Payment',
+                          value: advancePayment,
+                          bold: true,
+                          onChanged: (v) => setState(() => advancePayment = v),
+                          subtitle: 'Add your advance payment for confirming booking',
+                        ),
+                        const SizedBox(height: 14),
+                        _label('Advance Percentage'),
+                        const SizedBox(height: 8),
+                        _textField(controller: advancePercentController, suffixText: '%'),
+                        const SizedBox(height: 22),
 
-                      _addOnCard(),
-                      const SizedBox(height: 18),
-                      const Divider(color: AppColors.kBorder, height: 1),
-                      const SizedBox(height: 16),
+                        _sectionHeader(Icons.event_available_outlined, 'Availability', muted: true),
+                        const SizedBox(height: 14),
 
-                      _toggleRow(
-                        label: 'Table Active',
-                        value: tableActive,
-                        bold: true,
-                        onChanged: (v) => setState(() => tableActive = v),
-                        subtitle: 'Visible to users for purchase',
-                      ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _label('Min Table'),
+                                  const SizedBox(height: 8),
+                                  _textField(controller: minTableController),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _label('Max Table'),
+                                  const SizedBox(height: 8),
+                                  _textField(controller: maxTableController),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        _toggleRow(
+                          label: 'Extra Person Add-on',
+                          value: extraPersonAddOn,
+                          bold: true,
+                          onChanged: (v) => setState(() => extraPersonAddOn = v),
+                          subtitle: 'Define the charge applicable for each extra guest.',
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Number Of Extra Guests',
+                                    style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: AppColors.kTextDark.withOpacity(0.55)),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _textField(controller: extraGuestsController, hint: 'Title'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Max Number Of Guest',
+                                    style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: AppColors.kTextDark.withOpacity(0.55)),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _textField(controller: maxGuestController, hint: 'Value'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        _toggleRow(
+                          label: 'Set Price Gender Wise',
+                          value: priceGenderWise,
+                          bold: true,
+                          onChanged: (v) => setState(() => priceGenderWise = v),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _genderMiniCard(
+                                icon: Icons.person,
+                                label: 'Male',
+                                count: genderPriceMaleCount,
+                                onDecrement: () => setState(
+                                    () => genderPriceMaleCount = (genderPriceMaleCount - 1).clamp(0, 999)),
+                                onIncrement: () => setState(() => genderPriceMaleCount++),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _genderMiniCard(
+                                icon: Icons.person,
+                                label: 'Female',
+                                count: genderPriceFemaleCount,
+                                onDecrement: () => setState(
+                                    () => genderPriceFemaleCount = (genderPriceFemaleCount - 1).clamp(0, 999)),
+                                onIncrement: () => setState(() => genderPriceFemaleCount++),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Price Per Male Guest',
+                                    style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: AppColors.kTextDark.withOpacity(0.55)),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _textField(controller: pricePerMaleController, hint: 'Value'),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Price Per Female Guest',
+                                    style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: AppColors.kTextDark.withOpacity(0.55)),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _textField(controller: pricePerFemaleController, hint: 'Value'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        _toggleRow(
+                          label: 'One Time Check In Only',
+                          value: oneTimeCheckIn,
+                          bold: true,
+                          onChanged: (v) => setState(() => oneTimeCheckIn = v),
+                        ),
+                        const SizedBox(height: 20),
+
+                        _addOnCard(),
+                        const SizedBox(height: 18),
+                        const Divider(color: AppColors.kBorder, height: 1),
+                        const SizedBox(height: 16),
+
+                        _toggleRow(
+                          label: 'Table Active',
+                          value: tableActive,
+                          bold: true,
+                          onChanged: (v) => setState(() => tableActive = v),
+                          subtitle: 'Visible to users for purchase',
+                        ),
+                      ], // end of !reservationEnabled
                     ],
                   ),
                 ),
@@ -405,7 +489,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                 const SizedBox(height: 3),
                 Text(
                   'For Wed, 29 Jan 2025 | 03:58PM',
-                  style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.45)),
+                  style: TextStyle(
+                      fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.45)),
                 ),
               ],
             ),
@@ -459,12 +544,13 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Generic text field ----------
+  // ---------- Generic text field (now with keyboardType optional) ----------
   Widget _textField({
     required TextEditingController controller,
     String? prefixText,
     String? suffixText,
     String? hint,
+    TextInputType? keyboardType,
   }) {
     return Container(
       height: 46,
@@ -482,6 +568,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
           Expanded(
             child: TextField(
               controller: controller,
+              keyboardType: keyboardType,
               decoration: InputDecoration(
                 border: InputBorder.none,
                 isDense: true,
@@ -498,8 +585,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Dropdown-style field ----------
-  Widget _dropdownField(String value) {
+  // ---------- Age Restriction Dropdown ----------
+  Widget _ageRestrictionDropdown() {
     return Container(
       height: 46,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -508,12 +595,23 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.kBorder, width: 1.2),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(value, style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
-          const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.kHint),
-        ],
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedAgeRestriction,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.kHint),
+          items: _ageOptions.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value, style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
+            );
+          }).toList(),
+          onChanged: (newValue) {
+            setState(() {
+              _selectedAgeRestriction = newValue!;
+            });
+          },
+        ),
       ),
     );
   }
@@ -629,7 +727,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
             ),
           ),
           _counterButton(icon: Icons.remove, onTap: onDecrement),
@@ -638,7 +737,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
             child: Text(
               '$count',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
             ),
           ),
           _counterButton(icon: Icons.add, onTap: onIncrement),
@@ -676,7 +776,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+                style: const TextStyle(
+                    fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
               ),
             ],
           ),
@@ -687,7 +788,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               _counterButton(icon: Icons.remove, onTap: onDecrement, small: true),
               Text(
                 '$count',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+                style: const TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
               ),
               _counterButton(icon: Icons.add, onTap: onIncrement, small: true),
             ],
@@ -716,7 +818,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Description textarea ----------
+  // ---------- Description textarea with character limit ----------
   Widget _descriptionBox() {
     return Container(
       decoration: BoxDecoration(
@@ -725,16 +827,35 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
         border: Border.all(color: AppColors.kBorder, width: 1.2),
       ),
       padding: const EdgeInsets.all(12),
-      child: TextField(
-        controller: descriptionController,
-        maxLines: 3,
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          isDense: true,
-          hintText: "What's included in this ticket...",
-          hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13.5),
-        ),
-        style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: descriptionController,
+            maxLines: 3,
+            maxLength: _descriptionMaxLength,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              hintText: "What's included in this table...",
+              hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13.5),
+              counterText: '', // We'll show custom counter below
+            ),
+            style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
+          ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Text(
+              '$_descriptionLength / $_descriptionMaxLength',
+              style: TextStyle(
+                fontSize: 12,
+                color: _descriptionLength > _descriptionMaxLength
+                    ? AppColors.kRed
+                    : AppColors.kHint,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -754,11 +875,14 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Current Price:', style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.6))),
+                Text('Current Price:',
+                    style: TextStyle(
+                        fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.6))),
                 const SizedBox(height: 4),
                 Text(
                   '₹ ${tablePriceController.text.isEmpty ? '0' : tablePriceController.text}',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kRed),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kRed),
                 ),
               ],
             ),
@@ -768,14 +892,17 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('Triggered Price:', style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.6))),
+                Text('Triggered Price:',
+                    style: TextStyle(
+                        fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.6))),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     const Text(
                       '₹ 525',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kRed),
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kRed),
                     ),
                     const SizedBox(width: 6),
                     Container(
@@ -786,7 +913,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                       ),
                       child: const Text(
                         'Auto Applied',
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.kWhite),
+                        style: TextStyle(
+                            fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.kWhite),
                       ),
                     ),
                   ],
@@ -814,7 +942,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
         children: [
           const Text(
             'Add-on',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
+            style: TextStyle(
+                fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
           ),
           const SizedBox(height: 14),
           Row(
@@ -878,7 +1007,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               icon: const Icon(Icons.add, size: 16, color: AppColors.kRed),
               label: const Text(
                 'Add More',
-                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.kRed),
+                style: TextStyle(
+                    fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.kRed),
               ),
             ),
           ),
@@ -916,7 +1046,9 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
             child: SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  // Submit logic – you can add navigation or validation here
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,
                   foregroundColor: AppColors.kWhite,

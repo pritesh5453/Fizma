@@ -1,3 +1,4 @@
+import 'package:fizma/Screens/add_event/add_venue_screen.dart';
 import 'package:fizma/Screens/navbar/navbar.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -477,7 +478,7 @@ class PreviewTicketScreen extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pushReplacement(context, 
-                  MaterialPageRoute(builder: (context) => const EventsNavBar()));
+                  MaterialPageRoute(builder: (context) => const AddVenueScreen()));
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,

@@ -13,14 +13,26 @@ class CreateTicketsScreen extends StatefulWidget {
 
 class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
   bool isTicketActive = true;
+  bool isCheckoutSystemEnabled = false;
+
+  final TextEditingController additionalInfoController = TextEditingController();
+  
+  // NEW: Controller for "Tickets per device"
+  final TextEditingController ticketsPerDeviceController = TextEditingController(text: '1');
+
+  @override
+  void dispose() {
+    additionalInfoController.dispose();
+    ticketsPerDeviceController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Gradient background set matching AppColors.screenGradient
       decoration: AppColors.screenGradient,
       child: Scaffold(
-        backgroundColor: Colors.transparent, // Background transparent for gradient
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -81,8 +93,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                           ),
                           OutlinedButton.icon(
                             onPressed: () {
-                              Navigator.push(context, 
-                              MaterialPageRoute(builder: (context) => const CreateTicketDetailsScreen()));
+                              // Add more ticket logic
                             },
                             style: OutlinedButton.styleFrom(
                               side: const BorderSide(color: AppColors.kRed, width: 1.2),
@@ -107,7 +118,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
                       const SizedBox(height: 6),
 
-                      // Subtitle
                       const Text(
                         'Manage your upcoming event access.',
                         style: TextStyle(
@@ -151,6 +161,47 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
                       // Ticket Card
                       _buildTicketCard(),
+
+                      const SizedBox(height: 20),
+
+                      // Checkout System Toggle
+                      _buildCheckoutToggle(),
+
+                      const SizedBox(height: 16),
+
+                      // ---------- NEW: Tickets per Device ----------
+                      _buildTicketsPerDeviceField(),
+
+                      const SizedBox(height: 16),
+
+                      // Additional Info Textarea
+                      const Text(
+                        'Additional Information',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.kWhite,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.cardBorder, width: 1),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: TextField(
+                          controller: additionalInfoController,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Enter any additional details (optional)',
+                            hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13),
+                          ),
+                          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -161,7 +212,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    // Back Button
                     Expanded(
                       child: SizedBox(
                         height: 48,
@@ -188,14 +238,15 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Submit for Review Button
                     Expanded(
                       child: SizedBox(
                         height: 48,
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.push(context, 
-                            MaterialPageRoute(builder: (context) => const EventsNavBar()));
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const EventsNavBar(initialIndex: 1)),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.kRed,
@@ -239,7 +290,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
-  // Helper widget for Ticket Card
+  // Helper widget for Ticket Card (unchanged)
   Widget _buildTicketCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -258,7 +309,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tag, Serial & Toggle Switch
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -290,7 +340,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                   ),
                 ],
               ),
-              // Custom Colored Switch
               Transform.scale(
                 scale: 0.8,
                 child: Switch(
@@ -309,7 +358,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
           const SizedBox(height: 8),
 
-          // Ticket Title
           const Text(
             'VIP Pass',
             style: TextStyle(
@@ -321,7 +369,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
           const SizedBox(height: 8),
 
-          // Location
           Row(
             children: const [
               Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
@@ -335,7 +382,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
           const SizedBox(height: 4),
 
-          // Date & Time
           Row(
             children: const [
               Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
@@ -349,7 +395,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
           const SizedBox(height: 16),
 
-          // Dotted Divider Line
           Row(
             children: List.generate(
               30,
@@ -364,7 +409,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
           const SizedBox(height: 12),
 
-          // Action Chips (View, Edit, Delete)
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -392,7 +436,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
-  // Helper widget for View / Edit / Delete Action Icons
   Widget _buildActionChip({
     required IconData icon,
     required Color iconColor,
@@ -405,6 +448,95 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
         padding: const EdgeInsets.all(4.0),
         child: Icon(icon, color: iconColor, size: 22),
       ),
+    );
+  }
+
+  // Checkout System Toggle (unchanged)
+  Widget _buildCheckoutToggle() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Checkout System',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            Switch(
+              value: isCheckoutSystemEnabled,
+              onChanged: (val) {
+                setState(() {
+                  isCheckoutSystemEnabled = val;
+                });
+              },
+              activeColor: AppColors.kRed,
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          isCheckoutSystemEnabled
+              ? 'Checkout is enabled for this event'
+              : 'Disable checkout for this event',
+          style: TextStyle(
+            fontSize: 11.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------- NEW: Tickets per Device Field ----------
+  Widget _buildTicketsPerDeviceField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Max Tickets Per Device',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: AppColors.kWhite,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppColors.cardBorder, width: 1.2),
+          ),
+          alignment: Alignment.centerLeft,
+          child: TextField(
+            controller: ticketsPerDeviceController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              hintText: 'e.g., 1 or 2',
+              hintStyle: TextStyle(color: AppColors.kHint, fontSize: 14),
+            ),
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Maximum number of tickets that can be scanned from a single device.',
+          style: TextStyle(
+            fontSize: 11.5,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 }
