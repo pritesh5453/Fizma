@@ -1,3 +1,5 @@
+import 'package:fizma/Screens/Payment_Screens/cancellation_request_screen.dart';
+import 'package:fizma/Screens/Payment_Screens/transaction_history.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
@@ -99,8 +101,8 @@ class _ManageRefundScreenState extends State<ManageRefundScreen> {
 
                 const SizedBox(height: 20),
 
-                // 3. Refund Request Item Card
-                _buildRefundItemCard(),
+                // 3. Refund Request Item Card (with onTap)
+                _buildRefundItemCard(context),
 
                 const Spacer(),
 
@@ -181,87 +183,95 @@ class _ManageRefundScreenState extends State<ManageRefundScreen> {
     );
   }
 
-  // --- Refund Card Item Widget ---
-  Widget _buildRefundItemCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // User Avatar Image Container
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              'https://i.pravatar.cc/100?img=5', // Sample image URL
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 50,
-                  height: 50,
-                  color: AppColors.statGreenBg,
-                  child: const Icon(Icons.person, color: AppColors.statGreenFg),
-                );
-              },
+  // --- Refund Card Item Widget with onTap ---
+  Widget _buildRefundItemCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CancellationRequestScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.kWhite,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // User & Booking Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Vijay Arora',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Booking ID #FIZ-99281 • 2 hours ago',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  '₹ 798.00',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Requesting Refund',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // User Avatar Image Container
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                'https://i.pravatar.cc/100?img=5', // Sample image URL
+                width: 50,
+                height: 50,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 50,
+                    height: 50,
+                    color: AppColors.statGreenBg,
+                    child: const Icon(Icons.person, color: AppColors.statGreenFg),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(width: 12),
+
+            // User & Booking Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'Vijay Arora',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Booking ID #FIZ-99281 • 2 hours ago',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '₹ 798.00',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Requesting Refund',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:fizma/Screens/add_event/add_volunteer/add_voluteer.dart';
 import 'package:fizma/Screens/add_event/event_slot.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -188,25 +189,34 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.kWhite,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.kRed, width: 1.2),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.add, size: 14, color: AppColors.kRed),
-                      SizedBox(width: 4),
-                      Text(
-                        'Add Volunteer',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kRed),
-                      ),
-                    ],
-                  ),
-                ),
+                GestureDetector(
+  onTap: () {
+    // Navigation logic
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AddVolunteerScreen()),
+    );
+  },
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: AppColors.kWhite,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: AppColors.kRed, width: 1.2),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: const [
+        Icon(Icons.add, size: 14, color: AppColors.kRed),
+        SizedBox(width: 4),
+        Text(
+          'Add Volunteer',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kRed),
+        ),
+      ],
+    ),
+  ),
+),
                 const SizedBox(width: 8),
                 InkWell(
                   onTap: () => Navigator.pop(context),

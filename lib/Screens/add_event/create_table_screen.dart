@@ -6,24 +6,37 @@ class CreateTableDetailsScreen extends StatefulWidget {
   const CreateTableDetailsScreen({super.key, required this.capacity});
 
   @override
-  State<CreateTableDetailsScreen> createState() => _CreateTableDetailsScreenState();
+  State<CreateTableDetailsScreen> createState() =>
+      _CreateTableDetailsScreenState();
 }
 
 class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
-  final TextEditingController tableNameController = TextEditingController(text: 'VIP Table');
-  final TextEditingController totalTableController = TextEditingController(text: '1');
-  final TextEditingController tablePriceController = TextEditingController(text: '500');
-  final TextEditingController maxPersonsController = TextEditingController(text: '4');
-  final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController belowThresholdController = TextEditingController(text: '10');
-  final TextEditingController increaseByController = TextEditingController(text: '5');
-  final TextEditingController advancePercentController = TextEditingController(text: '50');
-  final TextEditingController minTableController = TextEditingController(text: '1');
-  final TextEditingController maxTableController = TextEditingController(text: '200');
-  final TextEditingController extraGuestsController = TextEditingController();
+  final TextEditingController tableNameController =
+      TextEditingController(text: 'VIP Table');
+  final TextEditingController totalTableController =
+      TextEditingController(text: '1');
+  final TextEditingController tablePriceController =
+      TextEditingController(text: '500');
+  final TextEditingController maxPersonsController =
+      TextEditingController(text: '4');
+  final TextEditingController descriptionController =
+      TextEditingController();
+  final TextEditingController belowThresholdController =
+      TextEditingController(text: '10');
+  final TextEditingController increaseByController =
+      TextEditingController(text: '5');
+  final TextEditingController advancePercentController =
+      TextEditingController(text: '50');
+  final TextEditingController minTableController =
+      TextEditingController(text: '1');
+  final TextEditingController maxTableController =
+      TextEditingController(text: '200');
+  final TextEditingController extraGuestsController =
+      TextEditingController();
   final TextEditingController maxGuestController = TextEditingController();
   final TextEditingController pricePerMaleController = TextEditingController();
-  final TextEditingController pricePerFemaleController = TextEditingController();
+  final TextEditingController pricePerFemaleController =
+      TextEditingController();
   // Reservation related
   final TextEditingController contactNumberController = TextEditingController();
 
@@ -34,7 +47,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
   bool priceGenderWise = true;
   bool oneTimeCheckIn = true;
   bool tableActive = true;
-  bool reservationEnabled = false; // New toggle
+  bool reservationEnabled = false;
 
   int maleCount = 0;
   int femaleCount = 0;
@@ -143,7 +156,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                         value: reservationEnabled,
                         bold: true,
                         onChanged: (v) => setState(() => reservationEnabled = v),
-                        subtitle: 'Replace online pricing and checkout with a \nphone call button for this table.',
+                        subtitle:
+                            'Replace online pricing and checkout with a \nphone call button for this table.',
                       ),
                       // Show contact number only when reservation is enabled
                       if (reservationEnabled) ...[
@@ -157,6 +171,13 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                         ),
                       ],
                       const SizedBox(height: 8),
+
+                      // ---------- DESCRIPTION (always visible) ----------
+                      const SizedBox(height: 18),
+                      _label('Description'),
+                      const SizedBox(height: 8),
+                      _descriptionBox(),
+                      const SizedBox(height: 20),
 
                       // ---------- ALL OTHER FIELDS (hidden when reservation is ON) ----------
                       if (!reservationEnabled) ...[
@@ -181,7 +202,9 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                                 children: [
                                   _label('Table Price'),
                                   const SizedBox(height: 8),
-                                  _textField(controller: tablePriceController, prefixText: '₹ '),
+                                  _textField(
+                                      controller: tablePriceController,
+                                      prefixText: '₹ '),
                                 ],
                               ),
                             ),
@@ -191,7 +214,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
 
                         Row(
                           children: const [
-                            Icon(Icons.person_outline, size: 16, color: AppColors.kTextDark),
+                            Icon(Icons.person_outline,
+                                size: 16, color: AppColors.kTextDark),
                             SizedBox(width: 6),
                             Text(
                               'Max Persons per Table',
@@ -205,7 +229,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                         _textField(controller: maxPersonsController),
                         const SizedBox(height: 18),
 
-                        // Age Restriction Dropdown (proper)
+                        // Age Restriction Dropdown
                         _label('Age Restriction'),
                         const SizedBox(height: 8),
                         _ageRestrictionDropdown(),
@@ -216,11 +240,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                         _genderAllocationCard(),
                         const SizedBox(height: 18),
 
-                        _label('Description'),
-                        const SizedBox(height: 8),
-                        _descriptionBox(),
-                        const SizedBox(height: 20),
-
                         _sectionCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,7 +248,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                                 label: 'Dynamic Pricing',
                                 value: dynamicPricing,
                                 bold: true,
-                                onChanged: (v) => setState(() => dynamicPricing = v),
+                                onChanged: (v) =>
+                                    setState(() => dynamicPricing = v),
                                 subtitle:
                                     'Automatically increase Table price when availability becomes low.',
                               ),
@@ -239,23 +259,27 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         _label('When Tables left below'),
                                         const SizedBox(height: 8),
-                                        _textField(controller: belowThresholdController),
+                                        _textField(
+                                            controller: belowThresholdController),
                                       ],
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         _label('Increase by'),
                                         const SizedBox(height: 8),
                                         _textField(
-                                            controller: increaseByController, suffixText: '%'),
+                                            controller: increaseByController,
+                                            suffixText: '%'),
                                       ],
                                     ),
                                   ),
@@ -273,15 +297,20 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                           value: advancePayment,
                           bold: true,
                           onChanged: (v) => setState(() => advancePayment = v),
-                          subtitle: 'Add your advance payment for confirming booking',
+                          subtitle:
+                              'Add your advance payment for confirming booking',
                         ),
                         const SizedBox(height: 14),
                         _label('Advance Percentage'),
                         const SizedBox(height: 8),
-                        _textField(controller: advancePercentController, suffixText: '%'),
+                        _textField(
+                            controller: advancePercentController,
+                            suffixText: '%'),
                         const SizedBox(height: 22),
 
-                        _sectionHeader(Icons.event_available_outlined, 'Availability', muted: true),
+                        _sectionHeader(Icons.event_available_outlined,
+                            'Availability',
+                            muted: true),
                         const SizedBox(height: 14),
 
                         Row(
@@ -316,8 +345,10 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                           label: 'Extra Person Add-on',
                           value: extraPersonAddOn,
                           bold: true,
-                          onChanged: (v) => setState(() => extraPersonAddOn = v),
-                          subtitle: 'Define the charge applicable for each extra guest.',
+                          onChanged: (v) =>
+                              setState(() => extraPersonAddOn = v),
+                          subtitle:
+                              'Define the charge applicable for each extra guest.',
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -328,13 +359,16 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Number Of Extra Guests',
+                                    'Max Number of Extra Guests',
                                     style: TextStyle(
                                         fontSize: 11.5,
-                                        color: AppColors.kTextDark.withOpacity(0.55)),
+                                        color: AppColors.kTextDark
+                                            .withOpacity(0.55)),
                                   ),
                                   const SizedBox(height: 8),
-                                  _textField(controller: extraGuestsController, hint: 'Title'),
+                                  _textField(
+                                      controller: extraGuestsController,
+                                      hint: 'Title'),
                                 ],
                               ),
                             ),
@@ -344,13 +378,16 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Max Number Of Guest',
+                                    'Price Per Extra Guest',
                                     style: TextStyle(
                                         fontSize: 11.5,
-                                        color: AppColors.kTextDark.withOpacity(0.55)),
+                                        color: AppColors.kTextDark
+                                            .withOpacity(0.55)),
                                   ),
                                   const SizedBox(height: 8),
-                                  _textField(controller: maxGuestController, hint: 'Value'),
+                                  _textField(
+                                      controller: maxGuestController,
+                                      hint: 'Value'),
                                 ],
                               ),
                             ),
@@ -358,82 +395,102 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                         ),
                         const SizedBox(height: 20),
 
+                        // ---------- Set Price Gender Wise ----------
                         _toggleRow(
                           label: 'Set Price Gender Wise',
                           value: priceGenderWise,
                           bold: true,
-                          onChanged: (v) => setState(() => priceGenderWise = v),
+                          onChanged: (v) =>
+                              setState(() => priceGenderWise = v),
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _genderMiniCard(
-                                icon: Icons.person,
-                                label: 'Male',
-                                count: genderPriceMaleCount,
-                                onDecrement: () => setState(
-                                    () => genderPriceMaleCount = (genderPriceMaleCount - 1).clamp(0, 999)),
-                                onIncrement: () => setState(() => genderPriceMaleCount++),
+
+                        // Show gender selection and price fields only when toggle is ON
+                        if (priceGenderWise) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _genderMiniCard(
+                                  icon: Icons.person,
+                                  label: 'Male',
+                                  count: genderPriceMaleCount,
+                                  onDecrement: () => setState(() =>
+                                      genderPriceMaleCount =
+                                          (genderPriceMaleCount - 1).clamp(0, 999)),
+                                  onIncrement: () =>
+                                      setState(() => genderPriceMaleCount++),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _genderMiniCard(
-                                icon: Icons.person,
-                                label: 'Female',
-                                count: genderPriceFemaleCount,
-                                onDecrement: () => setState(
-                                    () => genderPriceFemaleCount = (genderPriceFemaleCount - 1).clamp(0, 999)),
-                                onIncrement: () => setState(() => genderPriceFemaleCount++),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _genderMiniCard(
+                                  icon: Icons.person,
+                                  label: 'Female',
+                                  count: genderPriceFemaleCount,
+                                  onDecrement: () => setState(() =>
+                                      genderPriceFemaleCount =
+                                          (genderPriceFemaleCount - 1).clamp(0, 999)),
+                                  onIncrement: () =>
+                                      setState(() => genderPriceFemaleCount++),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Price Per Male Guest',
-                                    style: TextStyle(
-                                        fontSize: 11.5,
-                                        color: AppColors.kTextDark.withOpacity(0.55)),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  _textField(controller: pricePerMaleController, hint: 'Value'),
-                                ],
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Price Per Male Guest',
+                                      style: TextStyle(
+                                          fontSize: 11.5,
+                                          color: AppColors.kTextDark
+                                              .withOpacity(0.55)),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    _textField(
+                                        controller: pricePerMaleController,
+                                        hint: 'Value'),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Price Per Female Guest',
-                                    style: TextStyle(
-                                        fontSize: 11.5,
-                                        color: AppColors.kTextDark.withOpacity(0.55)),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  _textField(controller: pricePerFemaleController, hint: 'Value'),
-                                ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Price Per Female Guest',
+                                      style: TextStyle(
+                                          fontSize: 11.5,
+                                          color: AppColors.kTextDark
+                                              .withOpacity(0.55)),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    _textField(
+                                        controller: pricePerFemaleController,
+                                        hint: 'Value'),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                        ] else ...[
+                          // If toggle is OFF, we just add a small gap for spacing consistency
+                          const SizedBox(height: 20),
+                        ],
 
                         _toggleRow(
                           label: 'One Time Check In Only',
                           value: oneTimeCheckIn,
                           bold: true,
-                          onChanged: (v) => setState(() => oneTimeCheckIn = v),
+                          onChanged: (v) =>
+                              setState(() => oneTimeCheckIn = v),
                         ),
                         const SizedBox(height: 20),
 
@@ -490,7 +547,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                 Text(
                   'For Wed, 29 Jan 2025 | 03:58PM',
                   style: TextStyle(
-                      fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.45)),
+                      fontSize: 11.5,
+                      color: AppColors.kTextDark.withOpacity(0.45)),
                 ),
               ],
             ),
@@ -512,7 +570,9 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: muted ? AppColors.kTextDark.withOpacity(0.7) : AppColors.kTextDark,
+            color: muted
+                ? AppColors.kTextDark.withOpacity(0.7)
+                : AppColors.kTextDark,
           ),
         ),
       ],
@@ -544,7 +604,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Generic text field (now with keyboardType optional) ----------
+  // ---------- Generic text field ----------
   Widget _textField({
     required TextEditingController controller,
     String? prefixText,
@@ -564,7 +624,9 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
       child: Row(
         children: [
           if (prefixText != null)
-            Text(prefixText, style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
+            Text(prefixText,
+                style:
+                    const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
           Expanded(
             child: TextField(
               controller: controller,
@@ -573,13 +635,16 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                 border: InputBorder.none,
                 isDense: true,
                 hintText: hint,
-                hintStyle: const TextStyle(color: AppColors.kHint, fontSize: 14),
+                hintStyle:
+                    const TextStyle(color: AppColors.kHint, fontSize: 14),
               ),
               style: const TextStyle(fontSize: 14, color: AppColors.kTextDark),
             ),
           ),
           if (suffixText != null)
-            Text(suffixText, style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
+            Text(suffixText,
+                style:
+                    const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
         ],
       ),
     );
@@ -599,11 +664,14 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
         child: DropdownButton<String>(
           value: _selectedAgeRestriction,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.kHint),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded,
+              color: AppColors.kHint),
           items: _ageOptions.map((String value) {
             return DropdownMenuItem<String>(
               value: value,
-              child: Text(value, style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
+              child: Text(value,
+                  style: const TextStyle(
+                      fontSize: 14, color: AppColors.kTextDark)),
             );
           }).toList(),
           onChanged: (newValue) {
@@ -655,7 +723,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.5)),
+            style: TextStyle(
+                fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.5)),
           ),
         ],
       ],
@@ -679,7 +748,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
             iconBg: const Color(0xFF4472D8),
             label: 'Male',
             count: maleCount,
-            onDecrement: () => setState(() => maleCount = (maleCount - 1).clamp(0, 999)),
+            onDecrement: () =>
+                setState(() => maleCount = (maleCount - 1).clamp(0, 999)),
             onIncrement: () => setState(() => maleCount++),
           ),
           const Divider(height: 1, color: AppColors.kBorder),
@@ -688,7 +758,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
             iconBg: AppColors.primaryRedDark,
             label: 'Female',
             count: femaleCount,
-            onDecrement: () => setState(() => femaleCount = (femaleCount - 1).clamp(0, 999)),
+            onDecrement: () =>
+                setState(() => femaleCount = (femaleCount - 1).clamp(0, 999)),
             onIncrement: () => setState(() => femaleCount++),
           ),
           const Divider(height: 1, color: AppColors.kBorder),
@@ -697,7 +768,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
             iconBg: const Color(0xFF3E8E5B),
             label: 'Other',
             count: otherCount,
-            onDecrement: () => setState(() => otherCount = (otherCount - 1).clamp(0, 999)),
+            onDecrement: () =>
+                setState(() => otherCount = (otherCount - 1).clamp(0, 999)),
             onIncrement: () => setState(() => otherCount++),
           ),
         ],
@@ -728,7 +800,9 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
             child: Text(
               label,
               style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.kTextDark),
             ),
           ),
           _counterButton(icon: Icons.remove, onTap: onDecrement),
@@ -738,7 +812,9 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               '$count',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.kTextDark),
             ),
           ),
           _counterButton(icon: Icons.add, onTap: onIncrement),
@@ -770,14 +846,17 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               Container(
                 width: 22,
                 height: 22,
-                decoration: const BoxDecoration(color: AppColors.kRed, shape: BoxShape.circle),
+                decoration: const BoxDecoration(
+                    color: AppColors.kRed, shape: BoxShape.circle),
                 child: Icon(icon, size: 12, color: AppColors.kWhite),
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: const TextStyle(
-                    fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.kTextDark),
               ),
             ],
           ),
@@ -789,7 +868,9 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               Text(
                 '$count',
                 style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.kTextDark),
               ),
               _counterButton(icon: Icons.add, onTap: onIncrement, small: true),
             ],
@@ -799,7 +880,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  Widget _counterButton({required IconData icon, required VoidCallback onTap, bool small = false}) {
+  Widget _counterButton(
+      {required IconData icon, required VoidCallback onTap, bool small = false}) {
     final size = small ? 24.0 : 28.0;
     return InkWell(
       onTap: onTap,
@@ -813,7 +895,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
           shape: BoxShape.circle,
           border: Border.all(color: AppColors.kBorder, width: 1.2),
         ),
-        child: Icon(icon, size: small ? 12 : 14, color: AppColors.kTextDark.withOpacity(0.6)),
+        child: Icon(icon,
+            size: small ? 12 : 14, color: AppColors.kTextDark.withOpacity(0.6)),
       ),
     );
   }
@@ -839,7 +922,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               isDense: true,
               hintText: "What's included in this table...",
               hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13.5),
-              counterText: '', // We'll show custom counter below
+              counterText: '',
             ),
             style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
           ),
@@ -860,7 +943,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Dynamic pricing summary card (Current -> Triggered) ----------
+  // ---------- Dynamic pricing summary card ----------
   Widget _dynamicPricingSummaryCard() {
     return Container(
       width: double.infinity,
@@ -877,12 +960,15 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               children: [
                 Text('Current Price:',
                     style: TextStyle(
-                        fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.6))),
+                        fontSize: 11.5,
+                        color: AppColors.kTextDark.withOpacity(0.6))),
                 const SizedBox(height: 4),
                 Text(
                   '₹ ${tablePriceController.text.isEmpty ? '0' : tablePriceController.text}',
                   style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kRed),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.kRed),
                 ),
               ],
             ),
@@ -894,7 +980,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               children: [
                 Text('Triggered Price:',
                     style: TextStyle(
-                        fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.6))),
+                        fontSize: 11.5,
+                        color: AppColors.kTextDark.withOpacity(0.6))),
                 const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -902,7 +989,9 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                     const Text(
                       '₹ 525',
                       style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kRed),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.kRed),
                     ),
                     const SizedBox(width: 6),
                     Container(
@@ -914,7 +1003,9 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                       child: const Text(
                         'Auto Applied',
                         style: TextStyle(
-                            fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.kWhite),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.kWhite),
                       ),
                     ),
                   ],
@@ -949,11 +1040,13 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
           Row(
             children: const [
               Expanded(
-                child: Text('Title', style: TextStyle(fontSize: 12, color: AppColors.kHint)),
+                child: Text('Title',
+                    style: TextStyle(fontSize: 12, color: AppColors.kHint)),
               ),
               SizedBox(width: 12),
               Expanded(
-                child: Text('Price (₹)', style: TextStyle(fontSize: 12, color: AppColors.kHint)),
+                child: Text('Price (₹)',
+                    style: TextStyle(fontSize: 12, color: AppColors.kHint)),
               ),
               SizedBox(width: 38),
             ],
@@ -980,7 +1073,8 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: const Padding(
                         padding: EdgeInsets.all(6),
-                        child: Icon(Icons.delete_outline, color: AppColors.kRed, size: 20),
+                        child: Icon(Icons.delete_outline,
+                            color: AppColors.kRed, size: 20),
                       ),
                     ),
                   ],
@@ -1002,13 +1096,16 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               style: OutlinedButton.styleFrom(
                 backgroundColor: AppColors.kWhite,
                 side: const BorderSide(color: AppColors.kRed, width: 1.3),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               icon: const Icon(Icons.add, size: 16, color: AppColors.kRed),
               label: const Text(
                 'Add More',
                 style: TextStyle(
-                    fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.kRed),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.kRed),
               ),
             ),
           ),
@@ -1032,11 +1129,15 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                 style: OutlinedButton.styleFrom(
                   backgroundColor: AppColors.kWhite,
                   side: const BorderSide(color: AppColors.kRed, width: 1.4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text(
                   'Back',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.kRed),
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.kRed),
                 ),
               ),
             ),
@@ -1047,17 +1148,21 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  // Submit logic – you can add navigation or validation here
+                  // Submit logic
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,
                   foregroundColor: AppColors.kWhite,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text(
                   'Submit',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.kWhite),
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.kWhite),
                 ),
               ),
             ),

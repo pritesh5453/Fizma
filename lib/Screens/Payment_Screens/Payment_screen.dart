@@ -1,4 +1,5 @@
 import 'package:fizma/Screens/Payment_Screens/manage_refund_screen.dart';
+import 'package:fizma/Screens/Payment_Screens/transaction_history.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
@@ -61,7 +62,12 @@ class PaymentScreen extends StatelessWidget {
                         iconBg: AppColors.statGreenBg,
                         iconColor: AppColors.statGreenFg,
                         title: 'Transaction\nHistory',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const TransactionHistoryScreen()),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(width: 16),
