@@ -37,7 +37,7 @@ class BankDetailsScreen extends StatelessWidget {
                       Navigator.of(context).pop(); // Popup close karega
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => const EventsNavBar(initialIndex: 3)),
+                        MaterialPageRoute(builder: (context) => const EventsNavBar(initialIndex: 4)),
                         (route) => false, // Prevents going back to form after submission
                       );
                     },

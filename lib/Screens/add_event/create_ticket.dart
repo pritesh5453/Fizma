@@ -1,542 +1,542 @@
-import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
-import 'package:fizma/Screens/navbar/navbar.dart';
-import 'package:fizma/utils/appcolors.dart';
-import 'package:flutter/material.dart';
+// import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
+// import 'package:fizma/Screens/navbar/navbar.dart';
+// import 'package:fizma/utils/appcolors.dart';
+// import 'package:flutter/material.dart';
 
-// Complete Screen Implementation
-class CreateTicketsScreen extends StatefulWidget {
-  const CreateTicketsScreen({Key? key}) : super(key: key);
+// // Complete Screen Implementation
+// class CreateTicketsScreen extends StatefulWidget {
+//   const CreateTicketsScreen({Key? key}) : super(key: key);
 
-  @override
-  State<CreateTicketsScreen> createState() => _CreateTicketsScreenState();
-}
+//   @override
+//   State<CreateTicketsScreen> createState() => _CreateTicketsScreenState();
+// }
 
-class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
-  bool isTicketActive = true;
-  bool isCheckoutSystemEnabled = false;
+// class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
+//   bool isTicketActive = true;
+//   bool isCheckoutSystemEnabled = false;
 
-  final TextEditingController additionalInfoController = TextEditingController();
+//   final TextEditingController additionalInfoController = TextEditingController();
   
-  // NEW: Controller for "Tickets per device"
-  final TextEditingController ticketsPerDeviceController = TextEditingController(text: '1');
+//   // NEW: Controller for "Tickets per device"
+//   final TextEditingController ticketsPerDeviceController = TextEditingController(text: '1');
 
-  @override
-  void dispose() {
-    additionalInfoController.dispose();
-    ticketsPerDeviceController.dispose();
-    super.dispose();
-  }
+//   @override
+//   void dispose() {
+//     additionalInfoController.dispose();
+//     ticketsPerDeviceController.dispose();
+//     super.dispose();
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: AppColors.screenGradient,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.kTextDark, size: 20),
-            onPressed: () => Navigator.maybePop(context),
-          ),
-          title: const Text(
-            'Create Tickets',
-            style: TextStyle(
-              color: AppColors.kTextDark,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          centerTitle: false,
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              // 1. Top Progress Indicator (4 segments: 3 active, 1 inactive)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Row(
-                  children: [
-                    _buildProgressSegment(isActive: true),
-                    const SizedBox(width: 6),
-                    _buildProgressSegment(isActive: true),
-                    const SizedBox(width: 6),
-                    _buildProgressSegment(isActive: true),
-                    const SizedBox(width: 6),
-                    _buildProgressSegment(isActive: false),
-                  ],
-                ),
-              ),
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       decoration: AppColors.screenGradient,
+//       child: Scaffold(
+//         backgroundColor: Colors.transparent,
+//         appBar: AppBar(
+//           backgroundColor: Colors.transparent,
+//           elevation: 0,
+//           leading: IconButton(
+//             icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.kTextDark, size: 20),
+//             onPressed: () => Navigator.maybePop(context),
+//           ),
+//           title: const Text(
+//             'Create Tickets',
+//             style: TextStyle(
+//               color: AppColors.kTextDark,
+//               fontSize: 18,
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//           centerTitle: false,
+//         ),
+//         body: SafeArea(
+//           child: Column(
+//             children: [
+//               // 1. Top Progress Indicator (4 segments: 3 active, 1 inactive)
+//               Padding(
+//                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+//                 child: Row(
+//                   children: [
+//                     _buildProgressSegment(isActive: true),
+//                     const SizedBox(width: 6),
+//                     _buildProgressSegment(isActive: true),
+//                     const SizedBox(width: 6),
+//                     _buildProgressSegment(isActive: true),
+//                     const SizedBox(width: 6),
+//                     _buildProgressSegment(isActive: false),
+//                   ],
+//                 ),
+//               ),
 
-              const SizedBox(height: 16),
+//               const SizedBox(height: 16),
 
-              // Main Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header Section: "My Tickets" + "Add More Ticket" Button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'My Tickets',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              // Add more ticket logic
-                            },
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.kRed, width: 1.2),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              backgroundColor: AppColors.kWhite,
-                            ),
-                            icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.kRed),
-                            label: const Text(
-                              'Add More Ticket',
-                              style: TextStyle(
-                                color: AppColors.kRed,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+//               // Main Content
+//               Expanded(
+//                 child: SingleChildScrollView(
+//                   padding: const EdgeInsets.symmetric(horizontal: 20),
+//                   child: Column(
+//                     crossAxisAlignment: CrossAxisAlignment.start,
+//                     children: [
+//                       // Header Section: "My Tickets" + "Add More Ticket" Button
+//                       Row(
+//                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//                         crossAxisAlignment: CrossAxisAlignment.center,
+//                         children: [
+//                           const Text(
+//                             'My Tickets',
+//                             style: TextStyle(
+//                               fontSize: 24,
+//                               fontWeight: FontWeight.bold,
+//                               color: AppColors.textPrimary,
+//                             ),
+//                           ),
+//                           OutlinedButton.icon(
+//                             onPressed: () {
+//                               // Add more ticket logic
+//                             },
+//                             style: OutlinedButton.styleFrom(
+//                               side: const BorderSide(color: AppColors.kRed, width: 1.2),
+//                               shape: RoundedRectangleBorder(
+//                                 borderRadius: BorderRadius.circular(20),
+//                               ),
+//                               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+//                               backgroundColor: AppColors.kWhite,
+//                             ),
+//                             icon: const Icon(Icons.edit_outlined, size: 16, color: AppColors.kRed),
+//                             label: const Text(
+//                               'Add More Ticket',
+//                               style: TextStyle(
+//                                 color: AppColors.kRed,
+//                                 fontWeight: FontWeight.bold,
+//                                 fontSize: 13,
+//                               ),
+//                             ),
+//                           ),
+//                         ],
+//                       ),
 
-                      const SizedBox(height: 6),
+//                       const SizedBox(height: 6),
 
-                      const Text(
-                        'Manage your upcoming event access.',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
+//                       const Text(
+//                         'Manage your upcoming event access.',
+//                         style: TextStyle(
+//                           color: AppColors.textSecondary,
+//                           fontSize: 14,
+//                         ),
+//                       ),
 
-                      const SizedBox(height: 20),
+//                       const SizedBox(height: 20),
 
-                      // Venue Info Block
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, color: AppColors.kRed, size: 20),
-                          const SizedBox(width: 6),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                'Siddhivinayak Community Hall',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                'Nashik',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+//                       // Venue Info Block
+//                       Row(
+//                         children: [
+//                           const Icon(Icons.location_on_outlined, color: AppColors.kRed, size: 20),
+//                           const SizedBox(width: 6),
+//                           Column(
+//                             crossAxisAlignment: CrossAxisAlignment.start,
+//                             children: const [
+//                               Text(
+//                                 'Siddhivinayak Community Hall',
+//                                 style: TextStyle(
+//                                   fontSize: 15,
+//                                   fontWeight: FontWeight.bold,
+//                                   color: AppColors.textPrimary,
+//                                 ),
+//                               ),
+//                               SizedBox(height: 2),
+//                               Text(
+//                                 'Nashik',
+//                                 style: TextStyle(
+//                                   fontSize: 12,
+//                                   color: AppColors.textSecondary,
+//                                 ),
+//                               ),
+//                             ],
+//                           ),
+//                         ],
+//                       ),
 
-                      const SizedBox(height: 20),
+//                       const SizedBox(height: 20),
 
-                      // Ticket Card
-                      _buildTicketCard(),
+//                       // Ticket Card
+//                       _buildTicketCard(),
 
-                      const SizedBox(height: 20),
+//                       const SizedBox(height: 20),
 
-                      // Checkout System Toggle
-                      _buildCheckoutToggle(),
+//                       // Checkout System Toggle
+//                       _buildCheckoutToggle(),
 
-                      const SizedBox(height: 16),
+//                       const SizedBox(height: 16),
 
-                      // ---------- NEW: Tickets per Device ----------
-                      _buildTicketsPerDeviceField(),
+//                       // ---------- NEW: Tickets per Device ----------
+//                       _buildTicketsPerDeviceField(),
 
-                      const SizedBox(height: 16),
+//                       const SizedBox(height: 16),
 
-                      // Additional Info Textarea
-                      const Text(
-                        'Additional Information',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.kWhite,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.cardBorder, width: 1),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: TextField(
-                          controller: additionalInfoController,
-                          maxLines: 4,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            hintText: 'Enter any additional details (optional)',
-                            hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13),
-                          ),
-                          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+//                       // Additional Info Textarea
+//                       const Text(
+//                         'Additional Information',
+//                         style: TextStyle(
+//                           fontSize: 14,
+//                           fontWeight: FontWeight.bold,
+//                           color: AppColors.textPrimary,
+//                         ),
+//                       ),
+//                       const SizedBox(height: 8),
+//                       Container(
+//                         decoration: BoxDecoration(
+//                           color: AppColors.kWhite,
+//                           borderRadius: BorderRadius.circular(12),
+//                           border: Border.all(color: AppColors.cardBorder, width: 1),
+//                         ),
+//                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+//                         child: TextField(
+//                           controller: additionalInfoController,
+//                           maxLines: 4,
+//                           decoration: const InputDecoration(
+//                             border: InputBorder.none,
+//                             hintText: 'Enter any additional details (optional)',
+//                             hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13),
+//                           ),
+//                           style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
 
-              // Bottom Action Buttons (Back & Submit for Review)
-              Container(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.kRed, width: 1.2),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            backgroundColor: AppColors.kWhite,
-                          ),
-                          child: const Text(
-                            'Back',
-                            style: TextStyle(
-                              color: AppColors.kRed,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: SizedBox(
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const EventsNavBar(initialIndex: 1)),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.kRed,
-                            elevation: 2,
-                            shadowColor: AppColors.kRed.withOpacity(0.4),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Submit for Review',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+//               // Bottom Action Buttons (Back & Submit for Review)
+//               Container(
+//                 padding: const EdgeInsets.all(20),
+//                 child: Row(
+//                   children: [
+//                     Expanded(
+//                       child: SizedBox(
+//                         height: 48,
+//                         child: OutlinedButton(
+//                           onPressed: () {
+//                             Navigator.pop(context);
+//                           },
+//                           style: OutlinedButton.styleFrom(
+//                             side: const BorderSide(color: AppColors.kRed, width: 1.2),
+//                             shape: RoundedRectangleBorder(
+//                               borderRadius: BorderRadius.circular(12),
+//                             ),
+//                             backgroundColor: AppColors.kWhite,
+//                           ),
+//                           child: const Text(
+//                             'Back',
+//                             style: TextStyle(
+//                               color: AppColors.kRed,
+//                               fontSize: 16,
+//                               fontWeight: FontWeight.bold,
+//                             ),
+//                           ),
+//                         ),
+//                       ),
+//                     ),
+//                     const SizedBox(width: 16),
+//                     Expanded(
+//                       child: SizedBox(
+//                         height: 48,
+//                         child: ElevatedButton(
+//                           onPressed: () {
+//                             Navigator.push(
+//                               context,
+//                               MaterialPageRoute(builder: (context) => const EventsNavBar(initialIndex: 1)),
+//                             );
+//                           },
+//                           style: ElevatedButton.styleFrom(
+//                             backgroundColor: AppColors.kRed,
+//                             elevation: 2,
+//                             shadowColor: AppColors.kRed.withOpacity(0.4),
+//                             shape: RoundedRectangleBorder(
+//                               borderRadius: BorderRadius.circular(12),
+//                             ),
+//                           ),
+//                           child: const Text(
+//                             'Submit for Review',
+//                             style: TextStyle(
+//                               color: Colors.white,
+//                               fontSize: 15,
+//                               fontWeight: FontWeight.bold,
+//                             ),
+//                           ),
+//                         ),
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
 
-  // Helper widget for Top Progress Bar Segments
-  Widget _buildProgressSegment({required bool isActive}) {
-    return Expanded(
-      child: Container(
-        height: 4,
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.kRed : AppColors.kChipBg,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
+//   // Helper widget for Top Progress Bar Segments
+//   Widget _buildProgressSegment({required bool isActive}) {
+//     return Expanded(
+//       child: Container(
+//         height: 4,
+//         decoration: BoxDecoration(
+//           color: isActive ? AppColors.kRed : AppColors.kChipBg,
+//           borderRadius: BorderRadius.circular(2),
+//         ),
+//       ),
+//     );
+//   }
 
-  // Helper widget for Ticket Card (unchanged)
-  Widget _buildTicketCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.tagBg,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'VIP',
-                      style: TextStyle(
-                        color: AppColors.tagFg,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'FIZ-99283-X',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              Transform.scale(
-                scale: 0.8,
-                child: Switch(
-                  value: isTicketActive,
-                  activeColor: AppColors.kWhite,
-                  activeTrackColor: AppColors.statGreenFg,
-                  onChanged: (val) {
-                    setState(() {
-                      isTicketActive = val;
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
+//   // Helper widget for Ticket Card (unchanged)
+//   Widget _buildTicketCard() {
+//     return Container(
+//       padding: const EdgeInsets.all(16),
+//       decoration: BoxDecoration(
+//         color: AppColors.kWhite,
+//         borderRadius: BorderRadius.circular(16),
+//         border: Border.all(color: AppColors.cardBorder, width: 1),
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withOpacity(0.03),
+//             blurRadius: 10,
+//             offset: const Offset(0, 4),
+//           ),
+//         ],
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Row(
+//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//             children: [
+//               Row(
+//                 children: [
+//                   Container(
+//                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+//                     decoration: BoxDecoration(
+//                       color: AppColors.tagBg,
+//                       borderRadius: BorderRadius.circular(4),
+//                     ),
+//                     child: const Text(
+//                       'VIP',
+//                       style: TextStyle(
+//                         color: AppColors.tagFg,
+//                         fontWeight: FontWeight.bold,
+//                         fontSize: 10,
+//                       ),
+//                     ),
+//                   ),
+//                   const SizedBox(width: 8),
+//                   const Text(
+//                     'FIZ-99283-X',
+//                     style: TextStyle(
+//                       color: AppColors.textSecondary,
+//                       fontSize: 12,
+//                       fontWeight: FontWeight.w500,
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//               Transform.scale(
+//                 scale: 0.8,
+//                 child: Switch(
+//                   value: isTicketActive,
+//                   activeColor: AppColors.kWhite,
+//                   activeTrackColor: AppColors.statGreenFg,
+//                   onChanged: (val) {
+//                     setState(() {
+//                       isTicketActive = val;
+//                     });
+//                   },
+//                 ),
+//               ),
+//             ],
+//           ),
 
-          const SizedBox(height: 8),
+//           const SizedBox(height: 8),
 
-          const Text(
-            'VIP Pass',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
+//           const Text(
+//             'VIP Pass',
+//             style: TextStyle(
+//               fontSize: 18,
+//               fontWeight: FontWeight.bold,
+//               color: AppColors.textPrimary,
+//             ),
+//           ),
 
-          const SizedBox(height: 8),
+//           const SizedBox(height: 8),
 
-          Row(
-            children: const [
-              Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
-              SizedBox(width: 4),
-              Text(
-                'Siddhivinayak Community Hall',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
+//           Row(
+//             children: const [
+//               Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
+//               SizedBox(width: 4),
+//               Text(
+//                 'Siddhivinayak Community Hall',
+//                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+//               ),
+//             ],
+//           ),
 
-          const SizedBox(height: 4),
+//           const SizedBox(height: 4),
 
-          Row(
-            children: const [
-              Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
-              SizedBox(width: 4),
-              Text(
-                'Oct 26 | 08:00 PM',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
+//           Row(
+//             children: const [
+//               Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
+//               SizedBox(width: 4),
+//               Text(
+//                 'Oct 26 | 08:00 PM',
+//                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+//               ),
+//             ],
+//           ),
 
-          const SizedBox(height: 16),
+//           const SizedBox(height: 16),
 
-          Row(
-            children: List.generate(
-              30,
-              (index) => Expanded(
-                child: Container(
-                  height: 1,
-                  color: index % 2 == 0 ? AppColors.kPink : Colors.transparent,
-                ),
-              ),
-            ),
-          ),
+//           Row(
+//             children: List.generate(
+//               30,
+//               (index) => Expanded(
+//                 child: Container(
+//                   height: 1,
+//                   color: index % 2 == 0 ? AppColors.kPink : Colors.transparent,
+//                 ),
+//               ),
+//             ),
+//           ),
 
-          const SizedBox(height: 12),
+//           const SizedBox(height: 12),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _buildActionChip(
-                icon: Icons.remove_red_eye_outlined,
-                iconColor: AppColors.chipViewFg,
-                onTap: () {},
-              ),
-              const SizedBox(width: 12),
-              _buildActionChip(
-                icon: Icons.edit_outlined,
-                iconColor: AppColors.chipEditFg,
-                onTap: () {},
-              ),
-              const SizedBox(width: 12),
-              _buildActionChip(
-                icon: Icons.delete_outline,
-                iconColor: AppColors.chipDeleteFg,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+//           Row(
+//             mainAxisAlignment: MainAxisAlignment.end,
+//             children: [
+//               _buildActionChip(
+//                 icon: Icons.remove_red_eye_outlined,
+//                 iconColor: AppColors.chipViewFg,
+//                 onTap: () {},
+//               ),
+//               const SizedBox(width: 12),
+//               _buildActionChip(
+//                 icon: Icons.edit_outlined,
+//                 iconColor: AppColors.chipEditFg,
+//                 onTap: () {},
+//               ),
+//               const SizedBox(width: 12),
+//               _buildActionChip(
+//                 icon: Icons.delete_outline,
+//                 iconColor: AppColors.chipDeleteFg,
+//                 onTap: () {},
+//               ),
+//             ],
+//           ),
+//         ],
+//       ),
+//     );
+//   }
 
-  Widget _buildActionChip({
-    required IconData icon,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Icon(icon, color: iconColor, size: 22),
-      ),
-    );
-  }
+//   Widget _buildActionChip({
+//     required IconData icon,
+//     required Color iconColor,
+//     required VoidCallback onTap,
+//   }) {
+//     return InkWell(
+//       onTap: onTap,
+//       borderRadius: BorderRadius.circular(8),
+//       child: Padding(
+//         padding: const EdgeInsets.all(4.0),
+//         child: Icon(icon, color: iconColor, size: 22),
+//       ),
+//     );
+//   }
 
-  // Checkout System Toggle (unchanged)
-  Widget _buildCheckoutToggle() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Checkout System',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            Switch(
-              value: isCheckoutSystemEnabled,
-              onChanged: (val) {
-                setState(() {
-                  isCheckoutSystemEnabled = val;
-                });
-              },
-              activeColor: AppColors.kRed,
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          isCheckoutSystemEnabled
-              ? 'Checkout is enabled for this event'
-              : 'Disable checkout for this event',
-          style: TextStyle(
-            fontSize: 11.5,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
+//   // Checkout System Toggle (unchanged)
+//   Widget _buildCheckoutToggle() {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         Row(
+//           children: [
+//             Expanded(
+//               child: Text(
+//                 'Checkout System',
+//                 style: TextStyle(
+//                   fontSize: 14,
+//                   fontWeight: FontWeight.bold,
+//                   color: AppColors.textPrimary,
+//                 ),
+//               ),
+//             ),
+//             Switch(
+//               value: isCheckoutSystemEnabled,
+//               onChanged: (val) {
+//                 setState(() {
+//                   isCheckoutSystemEnabled = val;
+//                 });
+//               },
+//               activeColor: AppColors.kRed,
+//             ),
+//           ],
+//         ),
+//         const SizedBox(height: 2),
+//         Text(
+//           isCheckoutSystemEnabled
+//               ? 'Checkout is enabled for this event'
+//               : 'Disable checkout for this event',
+//           style: TextStyle(
+//             fontSize: 11.5,
+//             color: AppColors.textSecondary,
+//           ),
+//         ),
+//       ],
+//     );
+//   }
 
-  // ---------- NEW: Tickets per Device Field ----------
-  Widget _buildTicketsPerDeviceField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Max Tickets Per Device',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          height: 46,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(
-            color: AppColors.kWhite,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.cardBorder, width: 1.2),
-          ),
-          alignment: Alignment.centerLeft,
-          child: TextField(
-            controller: ticketsPerDeviceController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              hintText: 'e.g., 1 or 2',
-              hintStyle: TextStyle(color: AppColors.kHint, fontSize: 14),
-            ),
-            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Maximum number of tickets that can be scanned from a single device.',
-          style: TextStyle(
-            fontSize: 11.5,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-}
+//   // ---------- NEW: Tickets per Device Field ----------
+//   Widget _buildTicketsPerDeviceField() {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         const Text(
+//           'Max Tickets Per Device',
+//           style: TextStyle(
+//             fontSize: 14,
+//             fontWeight: FontWeight.bold,
+//             color: AppColors.textPrimary,
+//           ),
+//         ),
+//         const SizedBox(height: 6),
+//         Container(
+//           height: 46,
+//           padding: const EdgeInsets.symmetric(horizontal: 14),
+//           decoration: BoxDecoration(
+//             color: AppColors.kWhite,
+//             borderRadius: BorderRadius.circular(10),
+//             border: Border.all(color: AppColors.cardBorder, width: 1.2),
+//           ),
+//           alignment: Alignment.centerLeft,
+//           child: TextField(
+//             controller: ticketsPerDeviceController,
+//             keyboardType: TextInputType.number,
+//             decoration: const InputDecoration(
+//               border: InputBorder.none,
+//               isDense: true,
+//               hintText: 'e.g., 1 or 2',
+//               hintStyle: TextStyle(color: AppColors.kHint, fontSize: 14),
+//             ),
+//             style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+//           ),
+//         ),
+//         const SizedBox(height: 4),
+//         Text(
+//           'Maximum number of tickets that can be scanned from a single device.',
+//           style: TextStyle(
+//             fontSize: 11.5,
+//             color: AppColors.textSecondary,
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }

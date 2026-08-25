@@ -1,179 +1,356 @@
-import 'package:fizma/Screens/add_event/add_event_slot.dart';
-import 'package:fizma/Screens/add_event/create_table_screen.dart';
-import 'package:fizma/Screens/add_event/create_ticket.dart';
-import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
-import 'package:fizma/Screens/add_event/event_slot.dart';
+import 'package:fizma/Screens/add_event/add_venue_slot.dart' hide VenueOption;
+import 'package:fizma/models_n_services/add_venue/add_venue_model.dart';
+import 'package:fizma/models_n_services/venue_list/venue_list_svc.dart';
+import 'package:fizma/models_n_services/venue_list/venue_list_model.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-// ---------- Data model for venue with capacity and buffer ----------
-class VenueWithCapacity {
-  final VenueOption venue;
-  final int capacity;
-  final int? bufferCapacity; // optional "safety cap"
+// ---------- Local Data Model for a Venue Entry (with controllers) ----------
+class VenueEntry {
+  final String id;
+  VenueOption? selectedVenue;
+  String capacity;
+  String safetyCap;
 
-  VenueWithCapacity({
-    required this.venue,
-    required this.capacity,
-    this.bufferCapacity,
+  // Controllers – created lazily so they persist
+  TextEditingController? _capacityController;
+  TextEditingController? _safetyCapController;
+
+  VenueEntry({
+    required this.id,
+    this.selectedVenue,
+    this.capacity = '',
+    this.safetyCap = '',
   });
+
+  // Get or create capacity controller, synced with current value
+  TextEditingController get capacityController {
+    _capacityController ??= TextEditingController(text: capacity);
+    return _capacityController!;
+  }
+
+  // Get or create safety cap controller, synced with current value
+  TextEditingController get safetyCapController {
+    _safetyCapController ??= TextEditingController(text: safetyCap);
+    return _safetyCapController!;
+  }
+
+  // Update capacity and sync controller text
+  void updateCapacity(String newValue) {
+    capacity = newValue;
+    if (_capacityController != null && _capacityController!.text != newValue) {
+      _capacityController!.text = newValue;
+    }
+  }
+
+  // Update safety cap and sync controller text
+  void updateSafetyCap(String newValue) {
+    safetyCap = newValue;
+    if (_safetyCapController != null && _safetyCapController!.text != newValue) {
+      _safetyCapController!.text = newValue;
+    }
+  }
+
+  VenueEntry copyWith({
+    String? id,
+    VenueOption? selectedVenue,
+    String? capacity,
+    String? safetyCap,
+  }) {
+    // Create a new entry but keep existing controllers if not replaced
+    final newEntry = VenueEntry(
+      id: id ?? this.id,
+      selectedVenue: selectedVenue ?? this.selectedVenue,
+      capacity: capacity ?? this.capacity,
+      safetyCap: safetyCap ?? this.safetyCap,
+    );
+    // Transfer controllers if they exist
+    if (_capacityController != null) newEntry._capacityController = _capacityController;
+    if (_safetyCapController != null) newEntry._safetyCapController = _safetyCapController;
+    return newEntry;
+  }
+
+  // Clean up controllers when entry is removed
+  void dispose() {
+    _capacityController?.dispose();
+    _safetyCapController?.dispose();
+  }
 }
 
-class VenueOption {
-  final String name;
-  final String city;
-  const VenueOption({required this.name, required this.city});
-}
-
-const List<VenueOption> _venueOptions = [
-  VenueOption(name: 'Siddhivinayak Community Hall', city: 'Nashik'),
-  VenueOption(name: 'Nazrul Mancha', city: 'Rabindra Sarobar, Nashik'),
-  VenueOption(name: 'Kala Mandir', city: 'Shakespeare Sarani, Nashik'),
-];
-
+// ---------- Main Screen ----------
 class AddVenueScreen extends StatefulWidget {
-  const AddVenueScreen({super.key});
+  final String eventName;
+  final String eventCategory;
+  final String organiserName;
+  final String languages;
+  final String eventId;
+  final String status;
+  final int organiserId;
+
+  const AddVenueScreen({
+    super.key,
+    required this.eventName,
+    required this.eventCategory,
+    required this.organiserName,
+    required this.languages,
+    required this.eventId,
+    required this.status,
+    required this.organiserId,
+  });
 
   @override
   State<AddVenueScreen> createState() => _AddVenueScreenState();
 }
 
 class _AddVenueScreenState extends State<AddVenueScreen> {
-  VenueWithCapacity? selectedVenueWithCapacity;
-  final List<EventSlot> eventSlots = [];
+  // ---------- Venue API Integration ----------
+  final VenueService _venueService = VenueService();
+  List<VenueOption> _apiVenues = [];
+  bool _isLoadingVenues = false;
+  String _venuesError = '';
 
-  Future<void> _openAddEventSlotSheet() async {
-    if (selectedVenueWithCapacity == null) return;
-    final result = await showModalBottomSheet<EventSlot>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddEventSlotSheet(
-        venueName: selectedVenueWithCapacity!.venue.name,
-        venueCity: selectedVenueWithCapacity!.venue.city,
-      ),
+  // ---------- Existing UI state ----------
+  int _selectedTab = 0;
+  bool _isVenueCardExpanded = true;
+  bool _isDropdownOpen = false;
+
+  // Tab 0 (Select Existing) Controllers & State
+  List<VenueEntry> _venues = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  // Tab 1 (Add New Venue) Controllers & State
+  final TextEditingController _newVenueNameController = TextEditingController();
+  final TextEditingController _newAddressController = TextEditingController();
+  String _selectedVenueType = 'Indoor';
+  final List<String> _venueTypeOptions = ['Indoor', 'Outdoor', 'Auditorium', 'Stadium', 'Hybrid'];
+
+  bool _isSubmittingVenue = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _venues.add(VenueEntry(id: DateTime.now().millisecondsSinceEpoch.toString()));
+    _fetchVenues();
+  }
+
+  // ---------- Helper: Show Snackbar ----------
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
+  }
 
-    if (result != null) {
+  // ---------- Fetch Venues from API ----------
+  Future<void> _fetchVenues() async {
+    setState(() {
+      _isLoadingVenues = true;
+      _venuesError = '';
+    });
+
+    try {
+      final venues = await _venueService.getVenueOptions(widget.organiserId);
       setState(() {
-        int pairNumber = (eventSlots.length ~/ 2) + 1;
-        eventSlots.add(EventSlot(
-          title: 'Event $pairNumber (Ticket)',
-          date: result.date,
-          startTime: result.startTime,
-          endTime: result.endTime,
-          capacity: result.capacity,
-          actionLabel: 'Create Ticket',
-        ));
-        eventSlots.add(EventSlot(
-          title: 'Event $pairNumber (Table)',
-          date: result.date,
-          startTime: result.startTime,
-          endTime: result.endTime,
-          capacity: result.capacity,
-          actionLabel: 'Create Table',
-        ));
+        _apiVenues = venues;
+        _isLoadingVenues = false;
+      });
+    } catch (e) {
+      setState(() {
+        _venuesError = 'Failed to load venues: $e';
+        _isLoadingVenues = false;
+      });
+      _showSnackBar('Could not fetch venues: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _newVenueNameController.dispose();
+    _newAddressController.dispose();
+    // Dispose all venue entry controllers
+    for (var entry in _venues) {
+      entry.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addVenue() {
+    setState(() {
+      _venues.add(VenueEntry(id: DateTime.now().millisecondsSinceEpoch.toString()));
+    });
+  }
+
+  void _removeVenue(String id) {
+    if (_venues.length <= 1) return;
+    final index = _venues.indexWhere((v) => v.id == id);
+    if (index != -1) {
+      _venues[index].dispose(); // Clean up controllers
+      setState(() {
+        _venues.removeAt(index);
+        _isDropdownOpen = false;
       });
     }
   }
 
-  Future<void> _openVenueLocationSheet() async {
-    final result = await showModalBottomSheet<VenueWithCapacity>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _VenueLocationSheet(
-        initialSelection: selectedVenueWithCapacity?.venue,
-        initialCapacity: selectedVenueWithCapacity?.capacity,
-        initialBuffer: selectedVenueWithCapacity?.bufferCapacity,
-      ),
+  void _updateVenue(String id, VenueEntry updated) {
+    final index = _venues.indexWhere((v) => v.id == id);
+    if (index != -1) {
+      // Dispose old entry's controllers if replaced entirely
+      if (_venues[index] != updated) {
+        // If the entry is being replaced, we need to transfer controllers carefully.
+        // Our copyWith already transfers controllers, so just replace.
+        setState(() {
+          _venues[index] = updated;
+        });
+      } else {
+        setState(() {});
+      }
+    }
+  }
+
+  // ---------- Handle Save New Venue (API Call) ----------
+  Future<void> _handleAddNewVenue() async {
+    // Validate inputs
+    if (_newVenueNameController.text.trim().isEmpty) {
+      _showSnackBar('Please enter venue name');
+      return;
+    }
+    if (_newAddressController.text.trim().isEmpty) {
+      _showSnackBar('Please enter address or Google Maps link');
+      return;
+    }
+
+    setState(() => _isSubmittingVenue = true);
+
+    final request = AddVenueRequest(
+      organiserId: widget.organiserId,
+      venueName: _newVenueNameController.text.trim(),
+      exactAddress: _newAddressController.text.trim(),
+      googleMapsLink: _newAddressController.text.trim(),
+      latitude: 0.0, // You can integrate a map picker later
+      longitude: 0.0,
+      venueType: _selectedVenueType,
     );
 
-    if (result != null) {
-      setState(() => selectedVenueWithCapacity = result);
+    try {
+      final response = await _venueService.addVenue(request);
+      if (!mounted) return;
+
+      _showSnackBar('Venue added successfully!');
+
+      // Clear form
+      _newVenueNameController.clear();
+      _newAddressController.clear();
+
+      // Refresh venue list
+      await _fetchVenues();
+
+      // Switch to "Select Existing" tab
+      setState(() {
+        _selectedTab = 0;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Failed to add venue: $e');
+    } finally {
+      if (mounted) setState(() => _isSubmittingVenue = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.kWhite,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: AppColors.screenGradient,
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTopBar(context),
-              _buildProgressBar(),
-              Expanded(
+      backgroundColor: const Color(0xFFFAF8F8),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildTopBar(context),
+            _buildProgressBar(),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  if (_isDropdownOpen) {
+                    setState(() => _isDropdownOpen = false);
+                  }
+                },
+                behavior: HitTestBehavior.opaque,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _eventSummaryCard(),
-                      const SizedBox(height: 20),
-                      _label('Select Venue Location'),
-                      const SizedBox(height: 10),
-                      _outlinedActionButton(
-                        icon: Icons.add,
-                        label: 'Add New Venue',
-                        onTap: _openVenueLocationSheet,
+                      const SizedBox(height: 16),
+                      Center(
+                        child: Text(
+                          'Select one or more venues for this event.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.kTextDark.withOpacity(0.5),
+                          ),
+                        ),
                       ),
-                      if (selectedVenueWithCapacity != null) ...[
-                        const SizedBox(height: 14),
-                        _venueCard(selectedVenueWithCapacity!),
+                      const SizedBox(height: 16),
+                      _buildTabSelector(),
+                      const SizedBox(height: 16),
+                      if (_selectedTab == 0) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Venues',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.kTextDark,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: _addVenue,
+                              child: const Text(
+                                '+ Assign Venue',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.kRed,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ..._venues.map((entry) => _buildSelectExistingCard(entry)).toList(),
+                      ] else ...[
+                        _buildAddNewVenueCard(),
                       ],
                     ],
                   ),
                 ),
               ),
-              _buildBottomButtons(context),
-            ],
-          ),
+            ),
+            _buildBottomButton(context),
+          ],
         ),
       ),
     );
   }
 
-  // ---------- Top App Bar ----------
+  // ---------- Top Bar ----------
   Widget _buildTopBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: AppColors.kTextDark),
+            icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.kTextDark),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Add Venue',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.kTextDark,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Add venues and create show slots',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: AppColors.kTextDark.withOpacity(0.45),
-                  ),
-                ),
-              ],
-            ),
+          const Text(
+            'Add Event',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
           ),
+          const SizedBox(width: 40),
         ],
       ),
     );
@@ -181,71 +358,60 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
 
   // ---------- Progress Bar ----------
   Widget _buildProgressBar() {
-    final fills = [1.0, 1.0, 0.15, 0.0];
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: List.generate(4, (index) {
-          return Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: index == 3 ? 0 : 6),
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE0E0E0),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  widthFactor: fills[index],
-                  child: Container(
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.kRed,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: List.generate(6, (index) {
+              return Expanded(
+                child: Container(
+                  margin: EdgeInsets.only(right: index == 5 ? 0 : 4),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: index < 3 ? AppColors.kRed : const Color(0xFFF0E0E0),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-              ),
-            ),
-          );
-        }),
-      ),
+              );
+            }),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Step 3 of 6', style: TextStyle(fontSize: 10, color: AppColors.kTextDark.withOpacity(0.5))),
+              const Text('Select Venue', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.kRed)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _label(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-        color: AppColors.kTextDark,
-      ),
-    );
-  }
-
-  // ---------- Event summary card ----------
+  // ---------- Event Summary Card ----------
   Widget _eventSummaryCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.kBorder, width: 1.2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF3E8E8)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: AppColors.kChipBg,
+              color: const Color(0xFFFFF0F0),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.calendar_month, color: AppColors.kRed, size: 20),
+            child: const Icon(Icons.calendar_month_outlined, color: AppColors.kRed, size: 20),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -253,45 +419,36 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Flexible(
+                    Expanded(
                       child: Text(
-                        'Bhajan Concert 2026',
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.kTextDark,
-                        ),
+                        widget.eventName,
+                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFDF0C8),
-                        borderRadius: BorderRadius.circular(20),
+                        color: widget.status == 'draft' ? const Color(0xFFFFF8E7) : const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
-                        'Draft',
+                      child: Text(
+                        widget.status,
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFB8860B),
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w600,
+                          color: widget.status == 'draft' ? const Color(0xFFD97706) : const Color(0xFF2E7D32),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'By Anup Jalota',
-                  style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.6)),
-                ),
                 const SizedBox(height: 2),
                 Text(
-                  'Hindi, Marathi • ID: EVT-2026-001',
-                  style: TextStyle(fontSize: 11, color: AppColors.kHint),
+                  'By : ${widget.organiserName} | ${widget.languages} | ID : ${widget.eventId}',
+                  style: TextStyle(fontSize: 10.5, color: AppColors.kTextDark.withOpacity(0.45)),
                 ),
               ],
             ),
@@ -301,749 +458,495 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
     );
   }
 
-  // ---------- Outlined action button ----------
-  Widget _outlinedActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          height: 48,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: AppColors.kWhite,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.kRed, width: 1.3),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: AppColors.kRed),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.kRed,
+  // ---------- Tab Selector ----------
+  Widget _buildTabSelector() {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F1F1),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _selectedTab == 0 ? AppColors.kRed : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Select Existing',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: _selectedTab == 0 ? AppColors.kWhite : AppColors.kTextDark.withOpacity(0.5),
+                  ),
                 ),
               ),
-            ],
+            ),
           ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedTab = 1),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _selectedTab == 1 ? AppColors.kRed : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '+ Add New Venue',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: _selectedTab == 1 ? AppColors.kWhite : AppColors.kTextDark.withOpacity(0.5),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- TAB 0: Select Existing Card ----------
+  Widget _buildSelectExistingCard(VenueEntry entry) {
+    final index = _venues.indexOf(entry);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF3E8E8)),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _isVenueCardExpanded = !_isVenueCardExpanded),
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Venue ${index + 1}',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
+                  ),
+                  Row(
+                    children: [
+                      if (_venues.length > 1)
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(Icons.close, color: Colors.grey, size: 18),
+                          onPressed: () => _removeVenue(entry.id),
+                        ),
+                      Icon(
+                        _isVenueCardExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                        color: AppColors.kTextDark,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_isVenueCardExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _fieldLabel('Select Venue'),
+                  const SizedBox(height: 6),
+                  _buildDropdownField(entry),
+                  if (_isDropdownOpen && _venues.indexOf(entry) == _venues.length - 1)
+                    _buildDropdownOverlay(entry),
+                  const SizedBox(height: 12),
+                  _fieldLabel('Max Capacity'),
+                  const SizedBox(height: 6),
+                  _buildTextField(
+                    controller: entry.capacityController,
+                    hint: 'Enter Venue Capacity',
+                    keyboardType: TextInputType.numberWithOptions(decimal: false, signed: false),
+                    onChanged: (val) => entry.updateCapacity(val),
+                  ),
+                  const SizedBox(height: 12),
+                  _fieldLabel('Safety Cap (Optional)'),
+                  const SizedBox(height: 6),
+                  _buildTextField(
+                    controller: entry.safetyCapController,
+                    hint: 'e.g. 200',
+                    keyboardType: TextInputType.numberWithOptions(decimal: false, signed: false),
+                    onChanged: (val) => entry.updateSafetyCap(val),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- TAB 1: Add New Venue Card ----------
+  Widget _buildAddNewVenueCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF3E8E8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _fieldLabel('Venue Name'),
+          const SizedBox(height: 6),
+          _buildTextField(controller: _newVenueNameController, hint: 'e.g. City Conference Hall'),
+          const SizedBox(height: 14),
+          _fieldLabel('Exact Address / Google Maps Link'),
+          const SizedBox(height: 6),
+          _buildTextField(controller: _newAddressController, hint: 'Enter address or paste google maps link'),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              'or',
+              style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.4)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _fieldLabel('Select Location'),
+          const SizedBox(height: 6),
+          _buildLocationPickerTile(),
+          const SizedBox(height: 14),
+          _fieldLabel('Venue Type'),
+          const SizedBox(height: 6),
+          _buildVenueTypeDropdown(),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton(
+              onPressed: _isSubmittingVenue ? null : _handleAddNewVenue,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.kRed,
+                foregroundColor: AppColors.kWhite,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isSubmittingVenue
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2.4, color: AppColors.kWhite),
+                    )
+                  : const Text(
+                      'Save Venue',
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Dropdown Field ----------
+  Widget _buildDropdownField(VenueEntry entry) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (_isDropdownOpen) {
+            _isDropdownOpen = false;
+          } else {
+            _isDropdownOpen = true;
+          }
+        });
+      },
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: AppColors.kWhite,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: _isDropdownOpen ? AppColors.kRed : const Color(0xFFFFCCCC),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              entry.selectedVenue != null ? entry.selectedVenue!.name : 'Search & Select Venue',
+              style: TextStyle(
+                fontSize: 12.5,
+                color: entry.selectedVenue != null ? AppColors.kTextDark : AppColors.kTextDark.withOpacity(0.35),
+              ),
+            ),
+            Icon(
+              _isDropdownOpen ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+              color: AppColors.kTextDark.withOpacity(0.6),
+              size: 20,
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // ---------- Venue card (updated to show buffer) ----------
-  Widget _venueCard(VenueWithCapacity venueWithCap) {
-    final venue = venueWithCap.venue;
-    final buffer = venueWithCap.bufferCapacity;
+  // ---------- Dropdown Overlay ----------
+  Widget _buildDropdownOverlay(VenueEntry entry) {
+    List<VenueOption> sourceVenues = _apiVenues.isNotEmpty ? _apiVenues : [];
+
+    final filteredVenues = sourceVenues
+        .where((v) => v.name.toLowerCase().contains(_searchController.text.toLowerCase()))
+        .toList();
+
+    if (_isLoadingVenues && sourceVenues.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.kWhite,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: const Color(0xFFF0E0E0)),
+        ),
+        child: const Center(
+          child: SizedBox(
+            height: 40,
+            width: 40,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          ),
+        ),
+      );
+    }
+
+    if (sourceVenues.isEmpty && !_isLoadingVenues) {
+      return Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.kWhite,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: const Color(0xFFF0E0E0)),
+        ),
+        child: const Center(
+          child: Text(
+            'No venues found. Please add a new venue.',
+            style: TextStyle(fontSize: 12, color: AppColors.kHint),
+          ),
+        ),
+      );
+    }
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.kBorder, width: 1.2),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFF0E0E0)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Container(
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: AppColors.kWhite,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFFFD1D1)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.search, size: 18, color: AppColors.kRed),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      hintText: 'Search Venue',
+                      hintStyle: TextStyle(fontSize: 12, color: Color(0xFFB0A0A0)),
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                    style: const TextStyle(fontSize: 12, color: AppColors.kTextDark),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.location_on, color: AppColors.kRed, size: 18),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.kRed,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Row(
                   children: [
-                    Text(
-                      venue.name,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.kTextDark,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      venue.city,
-                      style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.55)),
-                    ),
+                    Icon(Icons.near_me, size: 12, color: AppColors.kWhite),
+                    SizedBox(width: 4),
+                    Text('Near Me', style: TextStyle(fontSize: 11, color: AppColors.kWhite, fontWeight: FontWeight.w600)),
                   ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Recent Searches',
+                style: TextStyle(fontSize: 11, color: AppColors.kTextDark.withOpacity(0.4)),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 14,
-            runSpacing: 6,
-            children: [
-              _statChip(Icons.calendar_today_outlined, '${eventSlots.length} shows'),
-              _statChip(Icons.groups_outlined, '${venueWithCap.capacity} cap'),
-              if (buffer != null)
-                _statChip(Icons.shield_outlined, 'Safety: $buffer'),
-              _statChip(Icons.person_outline, '${_totalSlotCapacity()} slot cap'),
-              _statChip(Icons.grid_view_rounded, '${_typeCount()} types'),
-            ],
-          ),
-          if (eventSlots.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            for (int i = 0; i < eventSlots.length; i += 2)
-              _buildSlotPair(
-                eventSlots[i],
-                eventSlots[i + 1],
-                venueCapacity: venueWithCap.capacity,
-                bufferCapacity: venueWithCap.bufferCapacity, // still passed but not used in screen constructors for now
-              ),
-          ],
-          const SizedBox(height: 4),
-          _outlinedActionButton(
-            icon: Icons.add,
-            label: 'Add Event Slot',
-            onTap: _openAddEventSlotSheet,
-          ),
-        ],
-      ),
-    );
-  }
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 220),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: filteredVenues.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final venue = filteredVenues[index];
+                final isSelected = entry.selectedVenue?.name == venue.name;
 
-  // ---------- Build a combined card for a Ticket and Table pair ----------
-  Widget _buildSlotPair(
-    EventSlot ticketSlot,
-    EventSlot tableSlot, {
-    required int venueCapacity,
-    int? bufferCapacity, // stored for later use, but not passed to screens (yet)
-  }) {
-    final commonDate = ticketSlot.date;
-    final commonStart = ticketSlot.startTime;
-    final commonEnd = ticketSlot.endTime;
-    final commonCapacity = ticketSlot.capacity;
-    final pairNumber = ticketSlot.title.split(' ')[1];
-
-    void deletePair() {
-      setState(() {
-        eventSlots.remove(ticketSlot);
-        eventSlots.remove(tableSlot);
-      });
-    }
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.kBorder, width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Date badge + title row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _dateBadge(commonDate),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Event $pairNumber',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.kTextDark,
+                return GestureDetector(
+                  onTap: () {
+                    _updateVenue(entry.id, entry.copyWith(
+                      selectedVenue: venue,
+                      capacity: venue.capacity.toString(),
+                    ));
+                    setState(() => _isDropdownOpen = false);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFFFFF5F5) : AppColors.kWhite,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? AppColors.kRed : const Color(0xFFF0E0E0),
+                        width: isSelected ? 1.2 : 1,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
+                    child: Row(
                       children: [
-                        const Icon(Icons.access_time, size: 12, color: AppColors.kHint),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$commonStart - $commonEnd',
-                          style: const TextStyle(fontSize: 11.5, color: AppColors.kHint),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF5EAEA),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.business, size: 16, color: Color(0xFF887070)),
                         ),
                         const SizedBox(width: 10),
-                        const Icon(Icons.groups_outlined, size: 12, color: AppColors.kHint),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$commonCapacity',
-                          style: const TextStyle(fontSize: 11.5, color: AppColors.kHint),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                venue.name,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${venue.city} · Cap. ${venue.capacity}',
+                                style: TextStyle(fontSize: 10, color: AppColors.kTextDark.withOpacity(0.45)),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF0F4FF),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  venue.type,
+                                  style: const TextStyle(fontSize: 9, color: Color(0xFF3B82F6), fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Ticket row - NOTE: bufferCapacity is not passed yet because the screen doesn't accept it.
-          // If you add a bufferCapacity parameter to CreateTicketDetailsScreen, uncomment the line below.
-          _slotActionRow(
-            slot: ticketSlot,
-            label: 'Create Ticket',
-            onActionTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreateTicketDetailsScreen(
-                    capacity: venueCapacity,
-                    // bufferCapacity: bufferCapacity, // <-- uncomment after adding parameter
-                  ),
-                ),
-              );
-            },
-            onToggle: (v) => setState(() => ticketSlot.isActive = v),
-            onEdit: () {},
-            onDelete: deletePair,
-          ),
-          const SizedBox(height: 8),
-
-          // Table row - same note
-          _slotActionRow(
-            slot: tableSlot,
-            label: 'Create Table',
-            onActionTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreateTableDetailsScreen(
-                    capacity: venueCapacity,
-                    // bufferCapacity: bufferCapacity, // <-- uncomment after adding parameter
-                  ),
-                ),
-              );
-            },
-            onToggle: (v) => setState(() => tableSlot.isActive = v),
-            onEdit: () {},
-            onDelete: deletePair,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------- Date badge ----------
-  Widget _dateBadge(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return Container(
-      width: 44,
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.kPinkLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.kBorder, width: 1),
-      ),
-      child: Column(
-        children: [
-          Text(
-            '${date.day}',
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: AppColors.kTextDark,
-            ),
-          ),
-          Text(
-            months[date.month - 1],
-            style: const TextStyle(fontSize: 10, color: AppColors.kHint),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------- Slot action row (unchanged) ----------
-  Widget _slotActionRow({
-    required EventSlot slot,
-    required String label,
-    required VoidCallback onActionTap,
-    required ValueChanged<bool> onToggle,
-    required VoidCallback onEdit,
-    required VoidCallback onDelete,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: SizedBox(
-            height: 38,
-            child: OutlinedButton.icon(
-              onPressed: onActionTap,
-              style: OutlinedButton.styleFrom(
-                backgroundColor: AppColors.kWhite,
-                side: const BorderSide(color: AppColors.kRed, width: 1.2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              icon: const Icon(Icons.edit_outlined, size: 14, color: AppColors.kRed),
-              label: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.kRed,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Switch(
-          value: slot.isActive,
-          onChanged: onToggle,
-          activeColor: const Color(0xFF22C55E),
-        ),
-        const SizedBox(width: 4),
-        _squareIconButton(icon: Icons.edit_outlined, onTap: onEdit),
-        const SizedBox(width: 8),
-        _squareIconButton(
-          icon: Icons.delete_outline,
-          onTap: onDelete,
-          isDelete: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _squareIconButton({required IconData icon, VoidCallback? onTap, bool isDelete = false}) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppColors.kWhite,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isDelete ? AppColors.kRed.withOpacity(0.6) : AppColors.kBorder,
-            width: 1.2,
-          ),
-        ),
-        child: Icon(icon, size: 16, color: isDelete ? AppColors.kRed : AppColors.kTextDark.withOpacity(0.6)),
-      ),
-    );
-  }
-
-  int _totalSlotCapacity() =>
-      eventSlots.fold(0, (sum, s) => sum + s.capacity);
-
-  int _typeCount() =>
-      eventSlots.map((s) => s.actionLabel).toSet().length;
-
-  Widget _statChip(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 13, color: AppColors.kHint),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11.5, color: AppColors.kHint)),
-      ],
-    );
-  }
-
-  // ---------- Bottom Buttons ----------
-  Widget _buildBottomButtons(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: SizedBox(
-              height: 50,
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: AppColors.kWhite,
-                  side: const BorderSide(color: AppColors.kRed, width: 1.4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Back',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.kRed,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(context, 
-                  MaterialPageRoute(builder: (context) => const CreateTicketsScreen()));
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.kRed,
-                  foregroundColor: AppColors.kWhite,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Save & Proceed',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.kWhite,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// =====================================================================
-// Bottom sheet: "Venue Location" with capacity + buffer input
-// =====================================================================
-class _VenueLocationSheet extends StatefulWidget {
-  final VenueOption? initialSelection;
-  final int? initialCapacity;
-  final int? initialBuffer;
-  const _VenueLocationSheet({
-    this.initialSelection,
-    this.initialCapacity,
-    this.initialBuffer,
-  });
-
-  @override
-  State<_VenueLocationSheet> createState() => _VenueLocationSheetState();
-}
-
-class _VenueLocationSheetState extends State<_VenueLocationSheet> {
-  late VenueOption? _selected = widget.initialSelection;
-  final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _capacityController = TextEditingController();
-  final TextEditingController _bufferController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.initialCapacity != null) {
-      _capacityController.text = widget.initialCapacity.toString();
-    }
-    if (widget.initialBuffer != null) {
-      _bufferController.text = widget.initialBuffer.toString();
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _capacityController.dispose();
-    _bufferController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final filtered = _venueOptions
-        .where((v) => v.name.toLowerCase().contains(_searchController.text.toLowerCase()))
-        .toList();
-
-    final bool isValid = _selected != null &&
-        _capacityController.text.isNotEmpty &&
-        int.tryParse(_capacityController.text) != null;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.kWhite,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.fromLTRB(18, 10, 18, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0E0E0),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Venue Location',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.kTextDark,
-                  ),
-                ),
-                InkWell(
-                  onTap: () => Navigator.pop(context),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: const BoxDecoration(
-                      color: AppColors.kChipBg,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.close, size: 16, color: AppColors.kRed),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Container(
-              height: 46,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: AppColors.kWhite,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.kBorder, width: 1.2),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.search, size: 18, color: AppColors.kHint),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (_) => setState(() {}),
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        isDense: true,
-                        hintText: 'Search venues, areas, or cities...',
-                        hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13.5),
-                      ),
-                      style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
-                    ),
-                  ),
-                  const Icon(Icons.tune, size: 18, color: AppColors.kHint),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _pillChip(
-                  icon: Icons.my_location,
-                  label: 'Near Me',
-                  filled: true,
-                ),
-                const SizedBox(width: 8),
-                _pillChip(
-                  icon: Icons.history,
-                  label: 'Recent Searches',
-                  filled: false,
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.28),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: filtered.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final venue = filtered[index];
-                  final isSelected = _selected?.name == venue.name;
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => setState(() => _selected = venue),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.kWhite,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? AppColors.kRed : AppColors.kBorder,
-                          width: isSelected ? 1.6 : 1.2,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
+                        if (isSelected)
                           Container(
-                            width: 34,
-                            height: 34,
+                            width: 18,
+                            height: 18,
                             decoration: const BoxDecoration(
-                              color: AppColors.kChipBg,
+                              color: AppColors.kRed,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.location_on, size: 16, color: AppColors.kRed),
+                            child: const Icon(Icons.check, size: 12, color: AppColors.kWhite),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  venue.name,
-                                  style: const TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.kTextDark,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  venue.city,
-                                  style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.55)),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 14),
-            // Capacity field
-            Container(
-              height: 46,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: AppColors.kWhite,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.kBorder, width: 1.2),
-              ),
-              child: Row(
-                children: [
-                  const Text(
-                    'Venue Capacity',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.kTextDark,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _capacityController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        isDense: true,
-                        hintText: 'Enter capacity',
-                        hintStyle: TextStyle(color: AppColors.kHint, fontSize: 13.5),
-                      ),
-                      style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
-                    ),
-                  ),
-                ],
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Location Picker ----------
+  Widget _buildLocationPickerTile() {
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: AppColors.kWhite,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFFFCCCC), width: 1),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Select on Map',
+              style: TextStyle(fontSize: 12.5, color: AppColors.kTextDark.withOpacity(0.4)),
             ),
-            const SizedBox(height: 12),
-            // NEW: Buffer/Safety Cap field
-            Container(
-              height: 46,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: AppColors.kWhite,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.kBorder, width: 1.2),
-              ),
-              child: Row(
-                children: [
-                  const Text(
-                    'Safety Cap (Optional)',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.kTextDark,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _bufferController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        isDense: true,
-                        hintText: 'e.g., 800 – tickets show full at this limit',
-                        hintStyle: TextStyle(color: AppColors.kHint, fontSize: 12),
-                      ),
-                      style: const TextStyle(fontSize: 13.5, color: AppColors.kTextDark),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: isValid
-                    ? () {
-                        Navigator.pop(
-                          context,
-                          VenueWithCapacity(
-                            venue: _selected!,
-                            capacity: int.parse(_capacityController.text),
-                            bufferCapacity: _bufferController.text.isNotEmpty
-                                ? int.tryParse(_bufferController.text)
-                                : null,
-                          ),
-                        );
-                      }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.kRed,
-                  disabledBackgroundColor: AppColors.kRed.withOpacity(0.4),
-                  foregroundColor: AppColors.kWhite,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Confirm Venue',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.kWhite,
-                  ),
-                ),
-              ),
+            Icon(
+              Icons.location_on_outlined,
+              color: AppColors.kTextDark.withOpacity(0.7),
+              size: 20,
             ),
           ],
         ),
@@ -1051,27 +954,109 @@ class _VenueLocationSheetState extends State<_VenueLocationSheet> {
     );
   }
 
-  Widget _pillChip({required IconData icon, required String label, required bool filled}) {
+  // ---------- Venue Type Dropdown ----------
+  Widget _buildVenueTypeDropdown() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: filled ? AppColors.kRed : AppColors.kChipBg,
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFCCCC), width: 1),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: filled ? AppColors.kWhite : AppColors.kTextDark.withOpacity(0.6)),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: filled ? AppColors.kWhite : AppColors.kTextDark.withOpacity(0.7),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedVenueType,
+          isExpanded: true,
+          icon: Icon(
+            Icons.keyboard_arrow_down,
+            color: AppColors.kTextDark.withOpacity(0.7),
+            size: 20,
+          ),
+          style: const TextStyle(fontSize: 12.5, color: AppColors.kTextDark),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                _selectedVenueType = newValue;
+              });
+            }
+          },
+          items: _venueTypeOptions.map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // ---------- Helpers ----------
+  Widget _fieldLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    TextInputType keyboardType = TextInputType.text,
+    void Function(String)? onChanged,
+  }) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFCCCC), width: 1),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(fontSize: 12.5, color: AppColors.kTextDark.withOpacity(0.35)),
+          border: InputBorder.none,
+          isDense: true,
+        ),
+        style: const TextStyle(fontSize: 12.5, color: AppColors.kTextDark),
+      ),
+    );
+  }
+
+  // ---------- Bottom Button ----------
+  Widget _buildBottomButton(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      color: AppColors.kWhite,
+      child: SizedBox(
+        height: 48,
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddEventSlotScreen()),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.kRed,
+            foregroundColor: AppColors.kWhite,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-        ],
+          child: const Text(
+            'Save & Proceed to Sessions',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          ),
+        ),
       ),
     );
   }

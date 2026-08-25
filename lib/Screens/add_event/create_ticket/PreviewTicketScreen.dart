@@ -1,9 +1,10 @@
 import 'package:fizma/Screens/add_event/add_venue_screen.dart';
 import 'package:fizma/Screens/navbar/navbar.dart';
+import 'package:fizma/utils/app_preference.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-class PreviewTicketScreen extends StatelessWidget {
+class PreviewTicketScreen extends StatefulWidget {
   final String ticketName;
   final String eventTitle;
   final String eventSubtitle;
@@ -39,7 +40,27 @@ class PreviewTicketScreen extends StatelessWidget {
     this.visibility = 'Public',
   });
 
-  String get _priceLabel => '₹ ${totalPrice.toStringAsFixed(0)}';
+  @override
+  State<PreviewTicketScreen> createState() => _PreviewTicketScreenState();
+}
+
+class _PreviewTicketScreenState extends State<PreviewTicketScreen> {
+  int? _organiserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrganiserId();
+  }
+
+  Future<void> _loadOrganiserId() async {
+    final id = await AppPreferences.getOrganiserId();
+    setState(() {
+      _organiserId = id;
+    });
+  }
+
+  String get _priceLabel => '₹ ${widget.totalPrice.toStringAsFixed(0)}';
 
   @override
   Widget build(BuildContext context) {
@@ -182,12 +203,12 @@ class PreviewTicketScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      eventTitle,
+                      widget.eventTitle,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kTextDark),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      eventSubtitle,
+                      widget.eventSubtitle,
                       style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.55)),
                     ),
                   ],
@@ -208,11 +229,11 @@ class PreviewTicketScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          _iconTextRow(Icons.calendar_today_outlined, dateTimeLabel),
+          _iconTextRow(Icons.calendar_today_outlined, widget.dateTimeLabel),
           const SizedBox(height: 5),
-          _iconTextRow(Icons.location_on_outlined, venue),
+          _iconTextRow(Icons.location_on_outlined, widget.venue),
           const SizedBox(height: 5),
-          _iconTextRow(Icons.groups_outlined, '$seats Seats'),
+          _iconTextRow(Icons.groups_outlined, '${widget.seats} Seats'),
           const SizedBox(height: 12),
           const Divider(height: 1, color: AppColors.kBorder),
           const SizedBox(height: 10),
@@ -259,14 +280,14 @@ class PreviewTicketScreen extends StatelessWidget {
             icon: Icons.confirmation_number,
             iconBg: const Color(0xFF4472D8),
             label: 'Ticket Name',
-            value: ticketName,
+            value: widget.ticketName,
           ),
           const SizedBox(height: 14),
           _detailRow(
             icon: Icons.groups,
             iconBg: AppColors.primaryRedDark,
             label: 'Total Seats',
-            value: '$seats',
+            value: '${widget.seats}',
           ),
           const SizedBox(height: 14),
           _detailRow(
@@ -290,7 +311,7 @@ class PreviewTicketScreen extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  validityLabel,
+                  widget.validityLabel,
                   style: const TextStyle(fontSize: 12.5, color: AppColors.kTextDark),
                 ),
               ),
@@ -298,9 +319,9 @@ class PreviewTicketScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          _plainRow('Max Tickets Per User', '$maxTicketsPerUser', icon: Icons.confirmation_number_outlined),
+          _plainRow('Max Tickets Per User', '${widget.maxTicketsPerUser}', icon: Icons.confirmation_number_outlined),
           const SizedBox(height: 14),
-          _plainRow('Ticket Refund', refundPolicy, icon: Icons.replay_outlined),
+          _plainRow('Ticket Refund', widget.refundPolicy, icon: Icons.replay_outlined),
           const SizedBox(height: 14),
 
           Row(
@@ -317,19 +338,19 @@ class PreviewTicketScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  earlyBirdEnabled ? 'Enabled' : 'Disabled',
+                  widget.earlyBirdEnabled ? 'Enabled' : 'Disabled',
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF22C55E)),
                 ),
               ),
             ],
           ),
-          if (earlyBirdEnabled) ...[
+          if (widget.earlyBirdEnabled) ...[
             const SizedBox(height: 10),
             _earlyBirdBox(),
           ],
           const SizedBox(height: 14),
 
-          _plainRow('Ticket Visibility', visibility, icon: Icons.visibility_outlined),
+          _plainRow('Ticket Visibility', widget.visibility, icon: Icons.visibility_outlined),
         ],
       ),
     );
@@ -392,7 +413,7 @@ class PreviewTicketScreen extends StatelessWidget {
                   children: [
                     Text('Offer Starts', style: TextStyle(fontSize: 10.5, color: AppColors.kTextDark.withOpacity(0.5))),
                     const SizedBox(height: 3),
-                    Text(offerStartLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kTextDark)),
+                    Text(widget.offerStartLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kTextDark)),
                   ],
                 ),
               ),
@@ -402,7 +423,7 @@ class PreviewTicketScreen extends StatelessWidget {
                   children: [
                     Text('Offer Ends', style: TextStyle(fontSize: 10.5, color: AppColors.kTextDark.withOpacity(0.5))),
                     const SizedBox(height: 3),
-                    Text(offerEndLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kTextDark)),
+                    Text(widget.offerEndLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kTextDark)),
                   ],
                 ),
               ),
@@ -412,7 +433,7 @@ class PreviewTicketScreen extends StatelessWidget {
           const Divider(height: 1, color: Color(0xFFCDEFDB)),
           const SizedBox(height: 8),
           Text(
-            discountLabel,
+            widget.discountLabel,
             style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF22C55E)),
           ),
         ],
@@ -446,7 +467,7 @@ class PreviewTicketScreen extends StatelessWidget {
     );
   }
 
-  // ---------- Bottom buttons ----------
+  // ---------- Bottom buttons (UPDATED) ----------
   Widget _buildBottomButtons(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -477,8 +498,25 @@ class PreviewTicketScreen extends StatelessWidget {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacement(context, 
-                  MaterialPageRoute(builder: (context) => const AddVenueScreen()));
+                  // ✅ Navigate to AddVenueScreen with available data
+                  // We'll use eventTitle as eventName, venue as organisername placeholder (or you can fetch from preferences)
+                  // For organiser name, we can use 'Organiser' as fallback.
+                  // We'll also pass a dummy eventId (you can generate a temporary one, or use the one from previous screen if available)
+                  // Since we don't have eventId here, we'll use 0 and the screen will handle it.
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddVenueScreen(
+                        eventName: widget.eventTitle,
+                        eventCategory: 'Music', // you can make this dynamic if needed
+                        organiserName: 'Organiser', // you can load from preferences
+                        languages: 'English', // placeholder
+                        eventId: '0', // dummy, you can replace with actual if available
+                        status: 'draft',
+                        organiserId: _organiserId ?? 0,
+                      ),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,
@@ -499,8 +537,7 @@ class PreviewTicketScreen extends StatelessWidget {
   }
 }
 
-/// Lightweight painter that draws a QR-code-like pattern without
-/// needing an external qr package or network image.
+// ---------- QR Painter (unchanged) ----------
 class _QrPlaceholderPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

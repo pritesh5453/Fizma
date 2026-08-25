@@ -1,12 +1,16 @@
 import 'dart:io';
+import 'package:fizma/Screens/navbar/navbar.dart';
+import 'package:fizma/models_n_services/add_event/add_event_svc.dart';
+import 'package:fizma/utils/app_preference.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fizma/Screens/add_event/media_upload.dart';
 import 'package:fizma/utils/appcolors.dart';
+import 'package:fizma/models_n_services/add_event/add_event_model.dart';
 
 class _ArtistData {
   final String name;
-  final String? imagePath; // local file path
+  final String? imagePath;
 
   _ArtistData(this.name, [this.imagePath]);
 
@@ -29,14 +33,31 @@ class AddEventScreen extends StatefulWidget {
 }
 
 class _AddEventScreenState extends State<AddEventScreen> {
-  final List<String> languages = ['English', 'Spanish'];
-  final List<String> tags = ['#livemusic', '#weekendvibes', '#outdoor'];
+  // ---------- API service ----------
+  final EventService _eventService = EventService();
+  bool _isSubmitting = false;
 
-  // Date & Time
+  // ---------- Category ----------
+  final List<String> _categories = const [
+    'Music',
+    'Comedy',
+    'Sports',
+    'Theatre',
+    'Workshop',
+    'Conference',
+    'Other',
+  ];
+  String? _selectedCategory;
+
+  // ---------- Languages / Tags ----------
+  List<String> _languagesList = ['English', 'Spanish'];
+  List<String> _tagsList = ['#livemusic', '#weekendvibes', '#outdoor'];
+
+  // ---------- Date/Time ----------
   DateTime? _startDateTime;
   DateTime? _endDateTime;
 
-  // Artist selection – using _ArtistData objects
+  // ---------- Artists ----------
   final List<_ArtistData> _availableArtists = [
     _ArtistData('Samay Raina'),
     _ArtistData('Arijit Singh'),
@@ -48,21 +69,22 @@ class _AddEventScreenState extends State<AddEventScreen> {
   ];
   final List<_ArtistData> _selectedArtists = [];
 
-  // Age restriction
-  String? _selectedAgeRestriction; // 'All Ages', '5+', '18+', '21+'
+  // ---------- Age Restriction ----------
+  String? _selectedAgeRestriction;
 
-  // Description word counter
+  // ---------- Text Controllers ----------
+  final TextEditingController _eventNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _termsController = TextEditingController();
+  final TextEditingController _facilitiesController = TextEditingController();
+  final TextEditingController _organiserNameController = TextEditingController(); // ✅ Added
+
   int _descriptionWordCount = 0;
   static const int maxWords = 300;
-
-  // Terms & Conditions default text (formatted with bullet points)
-  final TextEditingController _termsController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Default Terms & Conditions with bullet points
     _termsController.text =
         '• All attendees must follow the venue’s rules and regulations.\n'
         '• The organizer reserves the right to refuse entry or eject any attendee for violation of terms.\n'
@@ -71,12 +93,24 @@ class _AddEventScreenState extends State<AddEventScreen> {
         '• Please carry a valid ID for age‑restricted events.';
 
     _descriptionController.addListener(_updateWordCount);
+
+    // ✅ Load organiser name from preferences (optional)
+    _loadOrganiserName();
+  }
+
+  Future<void> _loadOrganiserName() async {
+    final details = await AppPreferences.getOrganiserDetails();
+    final name = details['organisationName'] ?? 'Organiser';
+    _organiserNameController.text = name;
   }
 
   @override
   void dispose() {
+    _eventNameController.dispose();
     _descriptionController.dispose();
     _termsController.dispose();
+    _facilitiesController.dispose();
+    _organiserNameController.dispose();
     super.dispose();
   }
 
@@ -88,81 +122,246 @@ class _AddEventScreenState extends State<AddEventScreen> {
     });
   }
 
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _formatDateForApi(DateTime dt) =>
+      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+  String _formatTimeForApi(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+  // ---------- API call: STEP 1 ----------
+  Future<void> _handleSaveAndProceed() async {
+    if (_eventNameController.text.trim().isEmpty) {
+      _showSnackBar('Please enter event name');
+      return;
+    }
+    if (_selectedCategory == null) {
+      _showSnackBar('Please select event category');
+      return;
+    }
+    if (_startDateTime == null || _endDateTime == null) {
+      _showSnackBar('Please select event start & end date/time');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final organiserId = await AppPreferences.getOrganiserId() ?? 0;
+    if (organiserId == 0) {
+      if (mounted) setState(() => _isSubmitting = false);
+      _showSnackBar('Organiser not found. Please log in again.');
+      return;
+    }
+
+    final request = EventCreateRequest(
+      eventName: _eventNameController.text.trim(),
+      eventCategory: _selectedCategory!,
+      artists: _selectedArtists.map((a) => a.name).toList(),
+      ageRestriction: _selectedAgeRestriction ?? '',
+      languages: _languagesList,
+      description: _descriptionController.text.trim(),
+      tags: _tagsList,
+      termsConditions: _termsController.text.trim(),
+      facilities: _facilitiesController.text
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
+      status: 'draft',
+      promotionalVideoUrl: '',
+      organiserId: organiserId,
+      eventDate: _formatDateForApi(_startDateTime!),
+      startTime: _formatTimeForApi(_startDateTime!),
+      endTime: _formatTimeForApi(_endDateTime!),
+      step: 1,
+    );
+
+    try {
+      final response = await _eventService.createEvent(request);
+      if (!mounted) return;
+
+      // ✅ Navigate to MediaUploadScreen with all required parameters
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => MediaUploadScreen(
+            eventId: response.eventId,
+            organiserId: organiserId,
+            eventName: _eventNameController.text.trim(),
+            eventCategory: _selectedCategory!,
+            organiserName: _organiserNameController.text.trim(),
+            languages: _languagesList.join(', '),
+            status: 'draft',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Failed to save event: $e');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  // ---------- Build UI ----------
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.kWhite,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: AppColors.screenGradient,
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTopBar(),
-              _buildProgressBar(),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _label('Event Name'),
-                      _textField(hint: 'Enter Name'),
-                      const SizedBox(height: 18),
+    return WillPopScope(
+      onWillPop: () async {
+        _goToEventsNavBar();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.kWhite,
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: AppColors.screenGradient,
+          child: SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTopBar(),
+                _buildProgressBar(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // // ---- Organiser Name (optional but needed for next screen) ----
+                        // _label('Organiser Name'),
+                        // _textField(hint: 'Enter Organiser Name', controller: _organiserNameController),
+                        // const SizedBox(height: 12),
 
-                      _label('Event Category'),
-                      _dropdown(hint: 'Select category'),
-                      const SizedBox(height: 18),
+                        _label('Event Name'),
+                        _textField(hint: 'Enter Name', controller: _eventNameController),
+                        const SizedBox(height: 18),
 
-                      _buildDateTimeSection(),
-                      const SizedBox(height: 18),
+                        _label('Event Category'),
+                        _buildCategoryDropdown(),
+                        const SizedBox(height: 18),
 
-                      _buildArtistsSection(),
-                      const SizedBox(height: 18),
+                        _buildDateTimeSection(),
+                        const SizedBox(height: 18),
 
-                      _buildAgeRestrictionDropdown(),
-                      const SizedBox(height: 18),
+                        _buildArtistsSection(),
+                        const SizedBox(height: 18),
 
-                      _label('Languages Supported'),
-                      const SizedBox(height: 8),
-                      _chipsWithAdd(
-                        items: languages,
-                        addLabel: '+ Add Language',
-                      ),
-                      const SizedBox(height: 18),
+                        _buildAgeRestrictionDropdown(),
+                        const SizedBox(height: 18),
 
-                      _label('Description'),
-                      const SizedBox(height: 8),
-                      _buildDescriptionRichTextBox(),
-                      const SizedBox(height: 18),
+                        _label('Languages Supported'),
+                        const SizedBox(height: 8),
+                        _chipsWithAdd(
+                          items: _languagesList,
+                          addLabel: '+ Add Language',
+                          onAdd: _showAddLanguageDialog,
+                          onRemove: (i) => setState(() => _languagesList.removeAt(i)),
+                        ),
+                        const SizedBox(height: 18),
 
-                      _label('Tags for Discoverability'),
-                      const SizedBox(height: 8),
-                      _tagChipsWithAdd(items: tags),
-                      const SizedBox(height: 18),
+                        _label('Description'),
+                        const SizedBox(height: 8),
+                        _buildDescriptionRichTextBox(),
+                        const SizedBox(height: 18),
 
-                      _label('Terms & Conditions'),
-                      const SizedBox(height: 8),
-                      _buildTermsRichTextBox(),
-                      const SizedBox(height: 18),
+                        _label('Tags for Discoverability'),
+                        const SizedBox(height: 8),
+                        _tagChipsWithAdd(
+                          items: _tagsList,
+                          onAdd: _showAddTagDialog,
+                          onRemove: (i) => setState(() => _tagsList.removeAt(i)),
+                        ),
+                        const SizedBox(height: 18),
 
-                      _label('Facilities'),
-                      const SizedBox(height: 8),
-                      _richTextBox(
-                        hintText: 'List facilities available...',
-                        controller: null,
-                        initialText: null,
-                        maxLines: 3,
-                      ),
-                    ],
+                        _label('Terms & Conditions'),
+                        const SizedBox(height: 8),
+                        _buildTermsRichTextBox(),
+                        const SizedBox(height: 18),
+
+                        _label('Facilities'),
+                        const SizedBox(height: 8),
+                        _richTextBox(
+                          hintText: 'List facilities available (comma separated)...',
+                          controller: _facilitiesController,
+                          initialText: null,
+                          maxLines: 3,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              _buildSaveButton(),
-            ],
+                _buildSaveButton(),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  // ---------- Navigation to EventsNavBar ----------
+  void _goToEventsNavBar() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EventsNavBar(initialIndex: 0),
+      ),
+    );
+  }
+
+  // ---------- Progress Bar ----------
+  Widget _buildProgressBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Row(
+        children: List.generate(6, (index) {
+          final bool active = index == 0;
+          return Expanded(
+            child: Container(
+              margin: EdgeInsets.only(right: index == 5 ? 0 : 6),
+              height: 4,
+              decoration: BoxDecoration(
+                color: active ? AppColors.kRed : const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  // ---------- Category dropdown ----------
+  Widget _buildCategoryDropdown() {
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.kBorder, width: 1.2),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedCategory,
+          hint: const Text('Select category',
+              style: TextStyle(color: AppColors.kHint, fontSize: 14)),
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.kHint),
+          items: _categories.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value, style: const TextStyle(fontSize: 14)),
+            );
+          }).toList(),
+          onChanged: (newValue) {
+            setState(() => _selectedCategory = newValue);
+          },
         ),
       ),
     );
@@ -192,7 +391,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
   }
 
-  // ----- Removable chip (for artists) with optional image thumbnail -----
   Widget _removableChip(_ArtistData artist, {required VoidCallback onRemove}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -203,7 +401,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Thumbnail if image exists
           if (artist.imagePath != null)
             ClipOval(
               child: Image.file(
@@ -229,7 +426,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
   }
 
-  // ----- Add Artist button (opens dialog) -----
   Widget _addArtistButton() {
     return GestureDetector(
       onTap: _showAddArtistDialog,
@@ -259,12 +455,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
   }
 
-  // ----- Improved Dialog for artist selection with image picker -----
   void _showAddArtistDialog() {
     String searchQuery = '';
     List<_ArtistData> filteredArtists = List.from(_availableArtists);
 
-    // For adding a new artist with photo
     String newArtistName = '';
     String? newArtistImagePath;
 
@@ -273,9 +467,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            // Helper to refresh dialog state
-            void refresh() => setStateDialog(() {});
-
             return AlertDialog(
               title: Row(
                 children: [
@@ -286,10 +477,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
               ),
               content: SizedBox(
                 width: double.maxFinite,
-                height: 400, // increased height
+                height: 400,
                 child: Column(
                   children: [
-                    // Search bar with clear button
                     TextField(
                       autofocus: true,
                       decoration: InputDecoration(
@@ -339,7 +529,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
                         itemBuilder: (context, index) {
                           bool isAddNew = index == filteredArtists.length;
                           if (isAddNew) {
-                            // "Add new artist" tile with image picker
                             return Container(
                               margin: const EdgeInsets.only(top: 8),
                               padding: const EdgeInsets.all(12),
@@ -361,7 +550,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
-                                      // Image picker button
                                       GestureDetector(
                                         onTap: () async {
                                           final picker = ImagePicker();
@@ -432,7 +620,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
                                       onPressed: (newArtistName.isEmpty)
                                           ? null
                                           : () {
-                                              // Add the new artist
                                               final newArtist = _ArtistData(
                                                   newArtistName,
                                                   newArtistImagePath);
@@ -454,7 +641,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
                               ),
                             );
                           }
-                          // Existing artist tile
                           final artist = filteredArtists[index];
                           final isSelected = _selectedArtists.contains(artist);
                           return ListTile(
@@ -614,13 +800,13 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
   }
 
-  // ---------- Terms & Conditions with default formatted text ----------
+  // ---------- Terms & Conditions ----------
   Widget _buildTermsRichTextBox() {
     return _richTextBox(
       hintText: 'Edit terms & conditions...',
       controller: _termsController,
       initialText: null,
-      maxLines: 6, // increased for bullet list
+      maxLines: 6,
     );
   }
 
@@ -678,7 +864,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
   }
 
-  // ---------- Date & Time section (unchanged) ----------
+  // ---------- Date & Time section ----------
   Widget _buildDateTimeSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -834,12 +1020,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
         width: double.infinity,
         height: 50,
         child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const MediaUploadScreen()),
-            );
-          },
+          onPressed: _isSubmitting ? null : _handleSaveAndProceed,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.kRed,
             foregroundColor: AppColors.kWhite,
@@ -848,14 +1029,23 @@ class _AddEventScreenState extends State<AddEventScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            'Save & Proceed',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.kWhite,
-            ),
-          ),
+          child: _isSubmitting
+              ? const SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: AppColors.kWhite,
+                  ),
+                )
+              : const Text(
+                  'Save & Proceed',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.kWhite,
+                  ),
+                ),
         ),
       ),
     );
@@ -868,7 +1058,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
       child: Row(
         children: [
           IconButton(
-            onPressed: () {},
+            onPressed: _goToEventsNavBar,
             icon: const Icon(Icons.arrow_back, color: AppColors.kTextDark),
           ),
           const Text(
@@ -880,28 +1070,6 @@ class _AddEventScreenState extends State<AddEventScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // ---------- Progress Bar ----------
-  Widget _buildProgressBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: List.generate(4, (index) {
-          final bool active = index == 0;
-          return Expanded(
-            child: Container(
-              margin: EdgeInsets.only(right: index == 3 ? 0 : 6),
-              height: 4,
-              decoration: BoxDecoration(
-                color: active ? AppColors.kRed : const Color(0xFFE0E0E0),
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          );
-        }),
       ),
     );
   }
@@ -922,7 +1090,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
   }
 
   // ---------- Simple Text Field ----------
-  Widget _textField({required String hint}) {
+  Widget _textField({required String hint, TextEditingController? controller}) {
     return Container(
       height: 46,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -933,6 +1101,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
       ),
       alignment: Alignment.centerLeft,
       child: TextField(
+        controller: controller,
         decoration: InputDecoration(
           border: InputBorder.none,
           isDense: true,
@@ -944,56 +1113,109 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
   }
 
-  // ---------- Generic Dropdown (for category) ----------
-  Widget _dropdown({required String hint}) {
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.kBorder, width: 1.2),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            hint,
-            style: const TextStyle(fontSize: 14, color: AppColors.kTextDark),
+  // ---------- Add Language / Tag dialogs ----------
+  void _showAddLanguageDialog() {
+    String value = '';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Language'),
+        content: TextField(
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'e.g. Hindi'),
+          onChanged: (v) => value = v.trim(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.kHint),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.kRed),
+            onPressed: () {
+              if (value.isNotEmpty && !_languagesList.contains(value)) {
+                setState(() => _languagesList.add(value));
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Add', style: TextStyle(color: AppColors.kWhite)),
+          ),
         ],
       ),
     );
   }
 
-  // ---------- Language Chips (static) ----------
-  Widget _chipsWithAdd({required List<String> items, required String addLabel}) {
+  void _showAddTagDialog() {
+    String value = '';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Tag'),
+        content: TextField(
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'e.g. #festival'),
+          onChanged: (v) => value = v.trim(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.kRed),
+            onPressed: () {
+              if (value.isNotEmpty) {
+                final tag = value.startsWith('#') ? value : '#$value';
+                if (!_tagsList.contains(tag)) {
+                  setState(() => _tagsList.add(tag));
+                }
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Add', style: TextStyle(color: AppColors.kWhite)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Language Chips ----------
+  Widget _chipsWithAdd({
+    required List<String> items,
+    required String addLabel,
+    required VoidCallback onAdd,
+    required ValueChanged<int> onRemove,
+  }) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        ...items.map((e) => _chip(e)),
-        _addChipButton(addLabel),
+        for (int i = 0; i < items.length; i++)
+          _chip(items[i], onRemove: () => onRemove(i)),
+        _addChipButton(addLabel, onTap: onAdd),
       ],
     );
   }
 
-  // ---------- Tag Chips (static) ----------
-  Widget _tagChipsWithAdd({required List<String> items}) {
+  // ---------- Tag Chips ----------
+  Widget _tagChipsWithAdd({
+    required List<String> items,
+    required VoidCallback onAdd,
+    required ValueChanged<int> onRemove,
+  }) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        ...items.map((e) => _chip(e)),
-        _circleAddButton(),
+        for (int i = 0; i < items.length; i++)
+          _chip(items[i], onRemove: () => onRemove(i)),
+        _circleAddButton(onTap: onAdd),
       ],
     );
   }
 
-  // ----- Static chip (non‑interactive close icon) -----
-  Widget _chip(String text) {
+  Widget _chip(String text, {VoidCallback? onRemove}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
@@ -1008,41 +1230,50 @@ class _AddEventScreenState extends State<AddEventScreen> {
             style: const TextStyle(fontSize: 13, color: AppColors.kTextDark),
           ),
           const SizedBox(width: 6),
-          const Icon(Icons.close, size: 15, color: AppColors.kTextDark),
+          GestureDetector(
+            onTap: onRemove,
+            child: const Icon(Icons.close, size: 15, color: AppColors.kTextDark),
+          ),
         ],
       ),
     );
   }
 
-  Widget _addChipButton(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.kRed, width: 1.2),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 13,
-          color: AppColors.kRed,
-          fontWeight: FontWeight.w600,
+  Widget _addChipButton(String label, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          color: AppColors.kWhite,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.kRed, width: 1.2),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.kRed,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
   }
 
-  Widget _circleAddButton() {
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        shape: BoxShape.circle,
-        border: Border.all(color: AppColors.kRed, width: 1.2),
+  Widget _circleAddButton({VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: AppColors.kWhite,
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.kRed, width: 1.2),
+        ),
+        child: const Icon(Icons.add, color: AppColors.kRed, size: 18),
       ),
-      child: const Icon(Icons.add, color: AppColors.kRed, size: 18),
     );
   }
 

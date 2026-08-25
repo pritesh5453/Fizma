@@ -1,16 +1,56 @@
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-class CreateTableDetailsScreen extends StatefulWidget {
-  final int capacity;
-  const CreateTableDetailsScreen({super.key, required this.capacity});
+// ---------- Table Data Model ----------
+class TableTier {
+  final String id;
+  final String name;
+  final int totalTables;
+  final double price;
+  final int maxPerPerson;
+  bool isActive;   // 👈 final hata diya
+  final bool reservationEnabled;
+  final bool isDynamicPricing;
 
-  @override
-  State<CreateTableDetailsScreen> createState() =>
-      _CreateTableDetailsScreenState();
+  TableTier({
+    required this.id,
+    required this.name,
+    required this.totalTables,
+    required this.price,
+    required this.maxPerPerson,
+    this.isActive = true,
+    this.reservationEnabled = false,
+    this.isDynamicPricing = false,
+  });
 }
 
-class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
+// ---------- Function to show Table Bottom Sheet ----------
+Future<TableTier?> showCreateTableBottomSheet(
+  BuildContext context,
+  int capacity,
+) {
+  return showModalBottomSheet<TableTier>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withOpacity(0.5),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => CreateTableBottomSheet(capacity: capacity),
+  );
+}
+
+// ---------- Bottom Sheet Widget ----------
+class CreateTableBottomSheet extends StatefulWidget {
+  final int capacity;
+  const CreateTableBottomSheet({super.key, required this.capacity});
+
+  @override
+  State<CreateTableBottomSheet> createState() => _CreateTableBottomSheetState();
+}
+
+class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
   final TextEditingController tableNameController =
       TextEditingController(text: 'VIP Table');
   final TextEditingController totalTableController =
@@ -19,8 +59,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
       TextEditingController(text: '500');
   final TextEditingController maxPersonsController =
       TextEditingController(text: '4');
-  final TextEditingController descriptionController =
-      TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
   final TextEditingController belowThresholdController =
       TextEditingController(text: '10');
   final TextEditingController increaseByController =
@@ -31,13 +70,11 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
       TextEditingController(text: '1');
   final TextEditingController maxTableController =
       TextEditingController(text: '200');
-  final TextEditingController extraGuestsController =
-      TextEditingController();
+  final TextEditingController extraGuestsController = TextEditingController();
   final TextEditingController maxGuestController = TextEditingController();
   final TextEditingController pricePerMaleController = TextEditingController();
   final TextEditingController pricePerFemaleController =
       TextEditingController();
-  // Reservation related
   final TextEditingController contactNumberController = TextEditingController();
 
   bool tableNameToggle = true;
@@ -57,17 +94,12 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
   int genderPriceFemaleCount = 0;
 
   final List<Map<String, TextEditingController>> addOns = [
-    {
-      'title': TextEditingController(),
-      'price': TextEditingController(),
-    },
+    {'title': TextEditingController(), 'price': TextEditingController()},
   ];
 
-  // Age restriction
   String _selectedAgeRestriction = 'All Ages';
   final List<String> _ageOptions = ['All Ages', '5+', '18+', '21+'];
 
-  // Description character limit
   static const int _descriptionMaxLength = 300;
   int _descriptionLength = 0;
 
@@ -110,24 +142,35 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.kWhite,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: AppColors.screenGradient,
-        child: SafeArea(
+    return Material(
+      color: Colors.transparent,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: Container(
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.80,
+          decoration: AppColors.screenGradient,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 10),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               _buildTopBar(context),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ---------- Table Name (always visible) ----------
                       Row(
                         children: [
                           const Expanded(
@@ -150,7 +193,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                       _textField(controller: tableNameController),
                       const SizedBox(height: 16),
 
-                      // ---------- Reservation Toggle (always visible) ----------
                       _toggleRow(
                         label: 'Reservation',
                         value: reservationEnabled,
@@ -159,7 +201,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                         subtitle:
                             'Replace online pricing and checkout with a \nphone call button for this table.',
                       ),
-                      // Show contact number only when reservation is enabled
                       if (reservationEnabled) ...[
                         const SizedBox(height: 10),
                         _label('Contact Number'),
@@ -172,14 +213,12 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                       ],
                       const SizedBox(height: 8),
 
-                      // ---------- DESCRIPTION (always visible) ----------
                       const SizedBox(height: 18),
                       _label('Description'),
                       const SizedBox(height: 8),
                       _descriptionBox(),
                       const SizedBox(height: 20),
 
-                      // ---------- ALL OTHER FIELDS (hidden when reservation is ON) ----------
                       if (!reservationEnabled) ...[
                         const SizedBox(height: 18),
                         Row(
@@ -229,7 +268,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                         _textField(controller: maxPersonsController),
                         const SizedBox(height: 18),
 
-                        // Age Restriction Dropdown
                         _label('Age Restriction'),
                         const SizedBox(height: 8),
                         _ageRestrictionDropdown(),
@@ -395,7 +433,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // ---------- Set Price Gender Wise ----------
                         _toggleRow(
                           label: 'Set Price Gender Wise',
                           value: priceGenderWise,
@@ -404,7 +441,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                               setState(() => priceGenderWise = v),
                         ),
 
-                        // Show gender selection and price fields only when toggle is ON
                         if (priceGenderWise) ...[
                           const SizedBox(height: 12),
                           Row(
@@ -481,7 +517,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                           ),
                           const SizedBox(height: 20),
                         ] else ...[
-                          // If toggle is OFF, we just add a small gap for spacing consistency
                           const SizedBox(height: 20),
                         ],
 
@@ -506,7 +541,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                           onChanged: (v) => setState(() => tableActive = v),
                           subtitle: 'Visible to users for purchase',
                         ),
-                      ], // end of !reservationEnabled
+                      ],
                     ],
                   ),
                 ),
@@ -519,38 +554,56 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Top App Bar ----------
+  // ---------- Top Bar ----------
   Widget _buildTopBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: AppColors.kTextDark),
+          const Expanded(
+            child: Text(
+              'Create Table',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppColors.kTextDark,
+              ),
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
+          Expanded(
+            flex: 2,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
-                  'Create Table',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.kTextDark,
-                  ),
-                ),
                 const SizedBox(height: 3),
                 Text(
                   'For Wed, 29 Jan 2025 | 03:58PM',
                   style: TextStyle(
-                      fontSize: 11.5,
-                      color: AppColors.kTextDark.withOpacity(0.45)),
+                    fontSize: 11.5,
+                    color: AppColors.kTextDark.withOpacity(0.45),
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Close',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.kTextDark,
+                ),
+              ),
             ),
           ),
         ],
@@ -558,7 +611,30 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Section header with leading icon ----------
+  Widget _label(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+        color: AppColors.kTextDark,
+      ),
+    );
+  }
+
+  Widget _sectionCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.kBorder, width: 1.2),
+      ),
+      child: child,
+    );
+  }
+
   Widget _sectionHeader(IconData icon, String text, {bool muted = false}) {
     final color = muted ? AppColors.kTextDark.withOpacity(0.55) : AppColors.kRed;
     return Row(
@@ -579,32 +655,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  Widget _label(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-        color: AppColors.kTextDark,
-      ),
-    );
-  }
-
-  // ---------- Wrapper card used for the Dynamic Pricing block ----------
-  Widget _sectionCard({required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.kBorder, width: 1.2),
-      ),
-      child: child,
-    );
-  }
-
-  // ---------- Generic text field ----------
   Widget _textField({
     required TextEditingController controller,
     String? prefixText,
@@ -625,8 +675,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
         children: [
           if (prefixText != null)
             Text(prefixText,
-                style:
-                    const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
+                style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
           Expanded(
             child: TextField(
               controller: controller,
@@ -635,56 +684,19 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                 border: InputBorder.none,
                 isDense: true,
                 hintText: hint,
-                hintStyle:
-                    const TextStyle(color: AppColors.kHint, fontSize: 14),
+                hintStyle: const TextStyle(color: AppColors.kHint, fontSize: 14),
               ),
               style: const TextStyle(fontSize: 14, color: AppColors.kTextDark),
             ),
           ),
           if (suffixText != null)
             Text(suffixText,
-                style:
-                    const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
+                style: const TextStyle(fontSize: 14, color: AppColors.kTextDark)),
         ],
       ),
     );
   }
 
-  // ---------- Age Restriction Dropdown ----------
-  Widget _ageRestrictionDropdown() {
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.kBorder, width: 1.2),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedAgeRestriction,
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-              color: AppColors.kHint),
-          items: _ageOptions.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(value,
-                  style: const TextStyle(
-                      fontSize: 14, color: AppColors.kTextDark)),
-            );
-          }).toList(),
-          onChanged: (newValue) {
-            setState(() {
-              _selectedAgeRestriction = newValue!;
-            });
-          },
-        ),
-      ),
-    );
-  }
-
-  // ---------- Toggle row (label [+subtitle] + switch) ----------
   Widget _toggleRow({
     IconData? icon,
     required String label,
@@ -731,7 +743,39 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Gender allocation bordered card ----------
+  Widget _ageRestrictionDropdown() {
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.kBorder, width: 1.2),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedAgeRestriction,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down_rounded,
+              color: AppColors.kHint),
+          items: _ageOptions.map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value,
+                  style: const TextStyle(
+                      fontSize: 14, color: AppColors.kTextDark)),
+            );
+          }).toList(),
+          onChanged: (newValue) {
+            setState(() {
+              _selectedAgeRestriction = newValue!;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _genderAllocationCard() {
     return Container(
       width: double.infinity,
@@ -823,7 +867,23 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Small gender card used under "Set Price Gender Wise" ----------
+  Widget _counterButton({required IconData icon, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 28,
+        height: 28,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.kBorder, width: 1.2),
+        ),
+        child: Icon(icon, size: 14, color: AppColors.kTextDark.withOpacity(0.6)),
+      ),
+    );
+  }
+
   Widget _genderMiniCard({
     required IconData icon,
     required String label,
@@ -864,7 +924,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _counterButton(icon: Icons.remove, onTap: onDecrement, small: true),
+              _counterButtonSmall(icon: Icons.remove, onTap: onDecrement),
               Text(
                 '$count',
                 style: const TextStyle(
@@ -872,7 +932,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                     fontWeight: FontWeight.w600,
                     color: AppColors.kTextDark),
               ),
-              _counterButton(icon: Icons.add, onTap: onIncrement, small: true),
+              _counterButtonSmall(icon: Icons.add, onTap: onIncrement),
             ],
           ),
         ],
@@ -880,28 +940,24 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  Widget _counterButton(
-      {required IconData icon, required VoidCallback onTap, bool small = false}) {
-    final size = small ? 24.0 : 28.0;
+  Widget _counterButtonSmall({required IconData icon, required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        width: size,
-        height: size,
+        width: 24,
+        height: 24,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: AppColors.kWhite,
           shape: BoxShape.circle,
           border: Border.all(color: AppColors.kBorder, width: 1.2),
         ),
-        child: Icon(icon,
-            size: small ? 12 : 14, color: AppColors.kTextDark.withOpacity(0.6)),
+        child: Icon(icon, size: 12, color: AppColors.kTextDark.withOpacity(0.6)),
       ),
     );
   }
 
-  // ---------- Description textarea with character limit ----------
   Widget _descriptionBox() {
     return Container(
       decoration: BoxDecoration(
@@ -943,7 +999,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Dynamic pricing summary card ----------
   Widget _dynamicPricingSummaryCard() {
     return Container(
       width: double.infinity,
@@ -1018,7 +1073,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Add-on section card ----------
   Widget _addOnCard() {
     return Container(
       width: double.infinity,
@@ -1114,7 +1168,6 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
     );
   }
 
-  // ---------- Bottom Back / Submit Buttons ----------
   Widget _buildBottomButtons(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -1133,7 +1186,7 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text(
-                  'Back',
+                  'Cancel',
                   style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -1148,7 +1201,20 @@ class _CreateTableDetailsScreenState extends State<CreateTableDetailsScreen> {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  // Submit logic
+                  // Return the created table data
+                  final table = TableTier(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    name: tableNameController.text.isNotEmpty
+                        ? tableNameController.text
+                        : 'VIP Table',
+                    totalTables: int.tryParse(totalTableController.text) ?? 1,
+                    price: double.tryParse(tablePriceController.text) ?? 0,
+                    maxPerPerson: int.tryParse(maxPersonsController.text) ?? 4,
+                    isActive: tableActive,
+                    reservationEnabled: reservationEnabled,
+                    isDynamicPricing: dynamicPricing,
+                  );
+                  Navigator.pop(context, table);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,

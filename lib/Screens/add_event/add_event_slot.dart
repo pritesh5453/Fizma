@@ -1,4 +1,5 @@
 import 'package:fizma/Screens/add_event/add_volunteer/add_voluteer.dart';
+import 'package:fizma/Screens/add_event/add_volunteer/voluteer_list_screen.dart';
 import 'package:fizma/Screens/add_event/event_slot.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -41,12 +42,21 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
 
   static const List<String> _dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   static const List<String> _weekdayNames = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
   ];
 
   // ---------- Helpers ----------
   String get _durationLabel {
-    final start = TimeOfDay(hour: _to24h(startHour, startIsAM), minute: startMinute);
+    final start = TimeOfDay(
+      hour: _to24h(startHour, startIsAM),
+      minute: startMinute,
+    );
     final end = TimeOfDay(hour: _to24h(endHour, endIsAM), minute: endMinute);
     int startMins = start.hour * 60 + start.minute;
     int endMins = end.hour * 60 + end.minute;
@@ -96,7 +106,9 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
   }
 
   // Registration deadline – we keep it as a separate date picker
-  DateTime selectedRegistrationDeadline = DateTime.now().add(const Duration(days: 5));
+  DateTime selectedRegistrationDeadline = DateTime.now().add(
+    const Duration(days: 5),
+  );
 
   Future<void> _pickRegistrationDeadline() async {
     final picked = await showDatePicker(
@@ -114,8 +126,18 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     final weekday = _weekdayNames[date.weekday - 1];
     return '${date.day} ${months[date.month - 1]} ${date.year}, $weekday';
@@ -130,17 +152,20 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
       return;
     }
 
-    final start = '${_displayHour(startHour)}:${startMinute.toString().padLeft(2, '0')} ${startIsAM ? 'AM' : 'PM'}';
-    final end = '${_displayHour(endHour)}:${endMinute.toString().padLeft(2, '0')} ${endIsAM ? 'PM' : 'AM'}';
+    final start =
+        '${_displayHour(startHour)}:${startMinute.toString().padLeft(2, '0')} ${startIsAM ? 'AM' : 'PM'}';
+    final end =
+        '${_displayHour(endHour)}:${endMinute.toString().padLeft(2, '0')} ${endIsAM ? 'PM' : 'AM'}';
 
     // NOTE: Update your EventSlot model to have both startDate and endDate.
     // For now, we keep the old 'date' field as startDate for compatibility.
     // In your parent screen, you'll need to use slot.startDate and slot.endDate.
     final slot = EventSlot(
-      date: selectedStartDate,        // to be removed after migration
+      date: selectedStartDate, // to be removed after migration
       startTime: start,
       endTime: end,
-      capacity: 2500, title: '',
+      capacity: 2500,
+      title: '',
       // also pass registration deadline if needed
     );
     Navigator.pop(context, slot);
@@ -165,7 +190,9 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Container(
         decoration: const BoxDecoration(
           color: AppColors.kWhite,
@@ -190,33 +217,42 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                   ),
                 ),
                 GestureDetector(
-  onTap: () {
-    // Navigation logic
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => AddVolunteerScreen()),
-    );
-  },
-  child: Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    decoration: BoxDecoration(
-      color: AppColors.kWhite,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: AppColors.kRed, width: 1.2),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: const [
-        Icon(Icons.add, size: 14, color: AppColors.kRed),
-        SizedBox(width: 4),
-        Text(
-          'Add Volunteer',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kRed),
-        ),
-      ],
-    ),
-  ),
-),
+                  onTap: () {
+                    // Navigation logic
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AssignVolunteersScreen(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.kWhite,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.kRed, width: 1.2),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.add, size: 14, color: AppColors.kRed),
+                        SizedBox(width: 4),
+                        Text(
+                          'Add Volunteer',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.kRed,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 8),
                 InkWell(
                   onTap: () => Navigator.pop(context),
@@ -228,7 +264,11 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                       color: AppColors.kChipBg,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, size: 16, color: AppColors.kRed),
+                    child: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: AppColors.kRed,
+                    ),
                   ),
                 ),
               ],
@@ -246,7 +286,11 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.location_on, color: AppColors.kRed, size: 18),
+                  const Icon(
+                    Icons.location_on,
+                    color: AppColors.kRed,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,7 +305,10 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                       ),
                       Text(
                         widget.venueCity,
-                        style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.55)),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.kTextDark.withOpacity(0.55),
+                        ),
                       ),
                     ],
                   ),
@@ -284,12 +331,23 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                 children: [
                   const Text(
                     'Venue Schedule',
-                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.kTextDark,
+                    ),
                   ),
                   const SizedBox(height: 12),
 
                   // --- From Date ---
-                  const Text('From Date', style: TextStyle(fontSize: 11.5, color: AppColors.kHint, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'From Date',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.kHint,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: _pickStartDate,
@@ -300,19 +358,33 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                       decoration: BoxDecoration(
                         color: AppColors.kWhite,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.kBorder, width: 1.2),
+                        border: Border.all(
+                          color: AppColors.kBorder,
+                          width: 1.2,
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, size: 15, color: AppColors.kRed),
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 15,
+                            color: AppColors.kRed,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _formatDate(selectedStartDate),
-                              style: const TextStyle(fontSize: 13, color: AppColors.kTextDark),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.kTextDark,
+                              ),
                             ),
                           ),
-                          const Icon(Icons.calendar_month_outlined, size: 16, color: AppColors.kHint),
+                          const Icon(
+                            Icons.calendar_month_outlined,
+                            size: 16,
+                            color: AppColors.kHint,
+                          ),
                         ],
                       ),
                     ),
@@ -320,7 +392,14 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                   const SizedBox(height: 12),
 
                   // --- To Date ---
-                  const Text('To Date', style: TextStyle(fontSize: 11.5, color: AppColors.kHint, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'To Date',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.kHint,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: _pickEndDate,
@@ -331,19 +410,33 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                       decoration: BoxDecoration(
                         color: AppColors.kWhite,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.kBorder, width: 1.2),
+                        border: Border.all(
+                          color: AppColors.kBorder,
+                          width: 1.2,
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, size: 15, color: AppColors.kRed),
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 15,
+                            color: AppColors.kRed,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _formatDate(selectedEndDate),
-                              style: const TextStyle(fontSize: 13, color: AppColors.kTextDark),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.kTextDark,
+                              ),
                             ),
                           ),
-                          const Icon(Icons.calendar_month_outlined, size: 16, color: AppColors.kHint),
+                          const Icon(
+                            Icons.calendar_month_outlined,
+                            size: 16,
+                            color: AppColors.kHint,
+                          ),
                         ],
                       ),
                     ),
@@ -351,7 +444,14 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                   const SizedBox(height: 12),
 
                   // --- Registration Deadline ---
-                  const Text('Registration Deadline', style: TextStyle(fontSize: 11.5, color: AppColors.kHint, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Registration Deadline',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.kHint,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   InkWell(
                     onTap: _pickRegistrationDeadline,
@@ -362,19 +462,33 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                       decoration: BoxDecoration(
                         color: AppColors.kWhite,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.kBorder, width: 1.2),
+                        border: Border.all(
+                          color: AppColors.kBorder,
+                          width: 1.2,
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today, size: 15, color: AppColors.kRed),
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 15,
+                            color: AppColors.kRed,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _formatDate(selectedRegistrationDeadline),
-                              style: const TextStyle(fontSize: 13, color: AppColors.kTextDark),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.kTextDark,
+                              ),
                             ),
                           ),
-                          const Icon(Icons.calendar_month_outlined, size: 16, color: AppColors.kHint),
+                          const Icon(
+                            Icons.calendar_month_outlined,
+                            size: 16,
+                            color: AppColors.kHint,
+                          ),
                         ],
                       ),
                     ),
@@ -384,20 +498,32 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                   // ---------- Time row with All Day toggle ----------
                   Row(
                     children: [
-                      const Text('Time Details', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.kTextDark)),
+                      const Text(
+                        'Time Details',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.kTextDark,
+                        ),
+                      ),
                       const Spacer(),
                       Row(
                         children: [
                           const Text(
                             'All Day',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.kTextDark,
+                            ),
                           ),
                           const SizedBox(width: 4),
                           Switch(
                             value: allDay,
                             onChanged: _toggleAllDay,
                             activeColor: AppColors.kRed,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
                         ],
                       ),
@@ -408,7 +534,10 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE1F8EA),
                           borderRadius: BorderRadius.circular(20),
@@ -416,11 +545,19 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.access_time, size: 12, color: Color(0xFF22C55E)),
+                            const Icon(
+                              Icons.access_time,
+                              size: 12,
+                              color: Color(0xFF22C55E),
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               _durationLabel,
-                              style: const TextStyle(fontSize: 11, color: Color(0xFF22C55E), fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF22C55E),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -438,7 +575,8 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                           minute: startMinute,
                           isAM: startIsAM,
                           onHourChanged: (h) => setState(() => startHour = h),
-                          onMinuteChanged: (m) => setState(() => startMinute = m),
+                          onMinuteChanged: (m) =>
+                              setState(() => startMinute = m),
                           onAmPmChanged: (am) => setState(() => startIsAM = am),
                           enabled: !allDay,
                         ),
@@ -463,12 +601,20 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                   // ---------- Repeat week ----------
                   Row(
                     children: [
-                      const Icon(Icons.event_repeat, size: 16, color: AppColors.kRed),
+                      const Icon(
+                        Icons.event_repeat,
+                        size: 16,
+                        color: AppColors.kRed,
+                      ),
                       const SizedBox(width: 6),
                       const Expanded(
                         child: Text(
                           'Repeat every week on:',
-                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.kTextDark,
+                          ),
                         ),
                       ),
                       Switch(
@@ -486,12 +632,12 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                       return InkWell(
                         onTap: repeatWeekly
                             ? () => setState(() {
-                                  if (selected) {
-                                    repeatDays.remove(index);
-                                  } else {
-                                    repeatDays.add(index);
-                                  }
-                                })
+                                if (selected) {
+                                  repeatDays.remove(index);
+                                } else {
+                                  repeatDays.add(index);
+                                }
+                              })
                             : null,
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
@@ -502,7 +648,9 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                             color: selected ? AppColors.kRed : AppColors.kWhite,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: selected ? AppColors.kRed : AppColors.kBorder,
+                              color: selected
+                                  ? AppColors.kRed
+                                  : AppColors.kBorder,
                               width: 1.2,
                             ),
                           ),
@@ -511,7 +659,9 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: selected ? AppColors.kWhite : AppColors.kTextDark.withOpacity(0.6),
+                              color: selected
+                                  ? AppColors.kWhite
+                                  : AppColors.kTextDark.withOpacity(0.6),
                             ),
                           ),
                         ),
@@ -539,7 +689,11 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                 ),
                 child: const Text(
                   'Save & Proceed',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.kWhite),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.kWhite,
+                  ),
                 ),
               ),
             ),
@@ -563,7 +717,14 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10.5, color: AppColors.kHint, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10.5,
+            color: AppColors.kHint,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -580,11 +741,17 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: enabled ? AppColors.kTextDark : AppColors.kTextDark.withOpacity(0.4),
+                    color: enabled
+                        ? AppColors.kTextDark
+                        : AppColors.kTextDark.withOpacity(0.4),
                   ),
                 ),
               ),
-              _amPmToggle(isAM: isAM, onChanged: onAmPmChanged, enabled: enabled),
+              _amPmToggle(
+                isAM: isAM,
+                onChanged: onAmPmChanged,
+                enabled: enabled,
+              ),
             ],
           ),
         ),
@@ -606,14 +773,23 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _amPmButton('AM', isAM, () { if (enabled) onChanged(true); }, enabled: enabled),
-          _amPmButton('PM', !isAM, () { if (enabled) onChanged(false); }, enabled: enabled),
+          _amPmButton('AM', isAM, () {
+            if (enabled) onChanged(true);
+          }, enabled: enabled),
+          _amPmButton('PM', !isAM, () {
+            if (enabled) onChanged(false);
+          }, enabled: enabled),
         ],
       ),
     );
   }
 
-  Widget _amPmButton(String label, bool selected, VoidCallback onTap, {bool enabled = true}) {
+  Widget _amPmButton(
+    String label,
+    bool selected,
+    VoidCallback onTap, {
+    bool enabled = true,
+  }) {
     return InkWell(
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(6),
@@ -631,8 +807,8 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
             color: selected
                 ? AppColors.kWhite
                 : enabled
-                    ? AppColors.kTextDark.withOpacity(0.5)
-                    : AppColors.kTextDark.withOpacity(0.2),
+                ? AppColors.kTextDark.withOpacity(0.5)
+                : AppColors.kTextDark.withOpacity(0.2),
           ),
         ),
       ),

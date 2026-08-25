@@ -1,290 +1,108 @@
-import 'package:fizma/Screens/events/event_details_screen.dart';
-import 'package:fizma/api_endpoints/api_endpoint.dart';
-import 'package:fizma/models_n_services/events/all_events_model.dart';
-import 'package:fizma/models_n_services/events/all_events_svc.dart';
-import 'package:fizma/utils/app_preference.dart';
-import 'package:fizma/utils/customappbar.dart';
+import 'package:fizma/Screens/events/EventDetails_screen.dart';
+import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-class LiveEventsScreen extends StatefulWidget {
-  final int? organiserId;
+// ---------- Event Model ----------
+class EventItem {
+  final String title;
+  final String status;
+  final String categoryTag;
+  final String date;
+  final String sessions;
+  final String performers;
+  final String venue;
+  final String volunteers;
+  final int ticketsSold;
+  final int totalTickets;
+  final String revenue;
+  final String imageUrl;
 
-  const LiveEventsScreen({super.key, this.organiserId});
-
-  @override
-  State<LiveEventsScreen> createState() => _LiveEventsScreenState();
+  EventItem({
+    required this.title,
+    required this.status,
+    required this.categoryTag,
+    required this.date,
+    required this.sessions,
+    required this.performers,
+    required this.venue,
+    required this.volunteers,
+    required this.ticketsSold,
+    required this.totalTickets,
+    required this.revenue,
+    required this.imageUrl,
+  });
 }
 
-class _LiveEventsScreenState extends State<LiveEventsScreen> {
-  final EventService _eventService = EventService();
-
-  String selectedTab = 'Current Live';
-  final Map<String, String> tabStatusMap = {
-    'Current Live': 'live',
-    'Upcoming': 'upcoming',
-    'History': 'done',
-  };
-  final Map<String, Map<String, String>> tabContentConfig = {
-    'Current Live': {
-      'title': 'All Live Events',
-      'subtitle': 'Manage your hosted events',
-    },
-    'Upcoming': {
-      'title': 'Upcoming Events',
-      'subtitle': 'Events scheduled for the future',
-    },
-    'History': {'title': 'Past Events', 'subtitle': 'View your past analytics'},
-  };
-
-  List<EventData> events = [];
-  bool isLoading = false;
-  String? errorMessage;
-  int? _organiserId;
-  bool _isLoadingId = true;
+class MyEventsScreen extends StatefulWidget {
+  const MyEventsScreen({super.key});
 
   @override
-  void initState() {
-    super.initState();
-    _resolveOrganiserId();
-  }
+  State<MyEventsScreen> createState() => _MyEventsScreenState();
+}
 
-  Future<void> _resolveOrganiserId() async {
-    int? id = widget.organiserId;
-    if (id == null) {
-      id = await AppPreferences.getOrganiserId();
-    }
-    setState(() {
-      _organiserId = id;
-      _isLoadingId = false;
-    });
-    if (id != null) {
-      _fetchEvents();
-    } else {
-      setState(() {
-        errorMessage = 'Organiser ID not found. Please login again.';
-      });
-    }
-  }
+class _MyEventsScreenState extends State<MyEventsScreen> {
+  String _selectedFilter = 'All';
 
-  Future<void> _fetchEvents() async {
-    if (_organiserId == null) return;
-    final status = tabStatusMap[selectedTab]!;
-    setState(() {
-      isLoading = true;
-      errorMessage = null;
-    });
+  final List<Map<String, dynamic>> _filters = [
+    {'label': 'All', 'count': null},
+    {'label': 'Published', 'count': 10},
+    {'label': 'Drafts', 'count': 1},
+    {'label': 'Completed', 'count': 5},
+    {'label': 'Canceled', 'count': 0},
+  ];
 
-    try {
-      final response = await _eventService.getEvents(
-        organiserId: _organiserId!,
-        status: status,
-        limit: 20,
-        offset: 0,
-      );
-      setState(() {
-        events = response.data;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        errorMessage = e.toString();
-        isLoading = false;
-      });
-    }
-  }
-
-  void _changeTab(String tab) {
-    if (selectedTab == tab) return;
-    setState(() {
-      selectedTab = tab;
-    });
-    _fetchEvents();
-  }
-
-  void _onMenuSelected(String action, int index) {
-    final event = events[index];
-    switch (action) {
-      case 'preview':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const EventDetailScreen()),
-        );
-        break;
-      case 'edit':
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Edit: ${event.title}')));
-        break;
-      case 'delete':
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Delete: ${event.title}')));
-        break;
-    }
-  }
+  final List<EventItem> _events = [
+    EventItem(
+      title: 'Chicago Symphony Gala',
+      status: 'Completed',
+      categoryTag: 'Ticket',
+      date: '2025-07-01',
+      sessions: '1 session',
+      performers: 'Samay Raina · Anuj Jalota',
+      venue: '1 venue',
+      volunteers: '3 volunteers',
+      ticketsSold: 1200,
+      totalTickets: 1200,
+      revenue: '₹180k',
+      imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
+    ),
+    EventItem(
+      title: 'Holi Cultural Fest 2026',
+      status: 'Scheduled',
+      categoryTag: 'Music',
+      date: '2026-03-15',
+      sessions: '2 sessions',
+      performers: 'Local Cultural Group',
+      venue: 'Manohar Garden',
+      volunteers: '5 volunteers',
+      ticketsSold: 850,
+      totalTickets: 1000,
+      revenue: '₹125k',
+      imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final currentConfig = tabContentConfig[selectedTab]!;
-
-    if (_isLoadingId) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFFFF3F3),
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (_organiserId == null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFFFF3F3),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                errorMessage ?? 'No organiser found',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _resolveOrganiserId,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF3F3),
-      appBar: CustomAppBar(
-        title: currentConfig['title']!,
-        subtitle: currentConfig['subtitle']!,
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _buildTabButton('Current Live', Icons.fiber_manual_record),
-                const SizedBox(width: 10),
-                _buildTabButton('Upcoming', Icons.calendar_month_outlined),
-                const SizedBox(width: 10),
-                _buildTabButton('History', Icons.history),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : errorMessage != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.redAccent,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Error loading events',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            errorMessage!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _fetchEvents,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : events.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No events found for this status',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    )
-                  : GridView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 0.76,
-                          ),
-                      itemCount: events.length,
-                      itemBuilder: (context, index) {
-                        final event = events[index];
-                        return _buildEventCard(event, index);
-                      },
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabButton(String title, IconData icon) {
-    final isSelected = selectedTab == title;
-    return GestureDetector(
-      onTap: () => _changeTab(title),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.redAccent : Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(
-            color: isSelected ? Colors.transparent : Colors.grey.shade300,
-            width: 1,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: Colors.redAccent.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
+      backgroundColor: const Color(0xFFFDF7F7),
+      body: SafeArea(
+        child: Column(
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : Colors.black87,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              title,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.black87,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
+            _buildHeader(),
+            const SizedBox(height: 12),
+            _buildSearchBarRow(),
+            const SizedBox(height: 12),
+            _buildFilterChips(),
+            const SizedBox(height: 14),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: _events.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                itemBuilder: (context, index) {
+                  return _buildEventCard(_events[index]);
+                },
               ),
             ),
           ],
@@ -293,286 +111,497 @@ class _LiveEventsScreenState extends State<LiveEventsScreen> {
     );
   }
 
-  Widget _buildEventCard(EventData event, int index) {
-    final soldText = '${event.ticketsSold}';
-    final revenueText = '₹${(event.totalRevenue / 1000).toStringAsFixed(1)}K';
-    final progress = event.progressPercentage / 100;
-
-    String statusBadge = '';
-    Color badgeColor = Colors.redAccent;
-    if (selectedTab == 'Current Live') {
-      statusBadge = 'Live';
-      badgeColor = Colors.redAccent;
-    } else if (selectedTab == 'Upcoming') {
-      statusBadge = 'Upcoming';
-      badgeColor = Colors.orange;
-    } else {
-      statusBadge = 'Done';
-      badgeColor = Colors.grey;
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+  // ---------- Header Section ----------
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Text(
+                'My Events',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.kTextDark,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                'Manage your hosted events',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF8E8E93),
+                ),
+              ),
+            ],
+          ),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFEAEA),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.notifications_outlined,
+              color: AppColors.kRed,
+              size: 22,
+            ),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Image
-            Expanded(
-              flex: 4,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  event.bannerImage.isNotEmpty
-                      ? Image.network(
-                          "${ApiEndpoints.baseUrl}${event.bannerImage}",
-                          fit: BoxFit.cover,
-                        )
-                      : Container(color: Colors.grey.shade200),
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeColor,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            statusBadge,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        event.category,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                        ),
+    );
+  }
+
+  // ---------- Search Bar + Add Event Button ----------
+  Widget _buildSearchBarRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 44,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF0F0F0)),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.search, size: 18, color: Color(0xFF9E9E9E)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search events...',
+                        hintStyle: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
+                        border: InputBorder.none,
+                        isDense: true,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            // Content
-            Expanded(
-              flex: 5,
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ),
+          const SizedBox(width: 10),
+          ElevatedButton.icon(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.kRed,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            icon: const Icon(Icons.add, size: 16),
+            label: const Text(
+              'Add Event',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Horizontal Filter Chips ----------
+  Widget _buildFilterChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: _filters.map((filter) {
+          final label = filter['label'] as String;
+          final count = filter['count'];
+          final isSelected = _selectedFilter == label;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedFilter = label),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.kRed : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? AppColors.kRed : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                child: Row(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            event.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: PopupMenuButton<String>(
-                            padding: EdgeInsets.zero,
-                            child: const Icon(
-                              Icons.more_vert,
-                              size: 16,
-                              color: Colors.black54,
-                            ),
-                            onSelected: (value) =>
-                                _onMenuSelected(value, index),
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'preview',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.visibility_outlined,
-                                      size: 18,
-                                      color: Colors.blue,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text('Preview'),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.edit_outlined,
-                                      size: 18,
-                                      color: Colors.green,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text('Edit'),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.delete_outline,
-                                      size: 18,
-                                      color: Colors.red,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text('Delete'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            color: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(color: Colors.grey.shade200),
-                            ),
-                            elevation: 4,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 12,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          event.location ?? 'No location',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Sold',
-                              style: TextStyle(fontSize: 9, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 1),
-                            Text(
-                              soldText,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            const Text(
-                              'Revenue',
-                              style: TextStyle(fontSize: 9, color: Colors.grey),
-                            ),
-                            const SizedBox(height: 1),
-                            Text(
-                              revenueText,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.redAccent,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        value: progress.clamp(0.0, 1.0),
-                        backgroundColor: Colors.grey.shade200,
-                        color: Colors.redAccent,
-                        minHeight: 3.5,
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected ? Colors.white : const Color(0xFF4B5563),
                       ),
                     ),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: Text(
-                        '${(progress * 100).toInt()}%',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.redAccent,
+                    if (count != null) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected
+                              ? Colors.white.withOpacity(0.9)
+                              : const Color(0xFF9CA3AF),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ---------- Event Item Card (with onTap navigation) ----------
+  Widget _buildEventCard(EventItem event) {
+    double progress = event.ticketsSold / event.totalTickets;
+
+    return GestureDetector(
+      onTap: () {
+        // ✅ Navigate to Event Detail Screen on card tap
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EventDetailsHostScreen(),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.025),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Banner Image with Overlays
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  child: Image.network(
+                    event.imageUrl,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 180,
+                        color: const Color(0xFFE0E0E0),
+                        child: const Center(child: Icon(Icons.image, color: Colors.grey)),
+                      );
+                    },
+                  ),
+                ),
+
+                // Status Badge (Left)
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          event.status,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF3B82F6),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+
+                      // Tag Badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.confirmation_number, size: 10, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              event.categoryTag,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Arrow Action Button (Right)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+
+            // Details Body
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.kTextDark,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        event.sessions,
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Date & Venue
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF9E9E9E)),
+                      const SizedBox(width: 4),
+                      Text(
+                        event.date,
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
+                      ),
+                      const Spacer(),
+                      const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF9E9E9E)),
+                      const SizedBox(width: 4),
+                      Text(
+                        event.venue,
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+
+                  // Performers & Volunteers
+                  Row(
+                    children: [
+                      const Icon(Icons.person_outline, size: 13, color: AppColors.kRed),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          event.performers,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF4B5563),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.people_outline, size: 12, color: Color(0xFF9E9E9E)),
+                          const SizedBox(width: 4),
+                          Text(
+                            event.volunteers,
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Progress Bar & Sales Info
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 6,
+                            backgroundColor: const Color(0xFFE5E7EB),
+                            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.kRed),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        '${event.ticketsSold}/${event.totalTickets}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        event.revenue,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------- Event Detail Screen (Placeholder) ----------
+class EventDetailScreen extends StatelessWidget {
+  final EventItem event;
+
+  const EventDetailScreen({super.key, required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(event.title),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: AppColors.kTextDark,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                event.imageUrl,
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 200,
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              event.title,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                const SizedBox(width: 6),
+                Text(event.date, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                const SizedBox(width: 6),
+                Text(event.venue, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.person, size: 16, color: Colors.grey),
+                const SizedBox(width: 6),
+                Text(event.performers, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  Column(
+                    children: [
+                      Text('${event.ticketsSold}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                      const Text('Sold', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Text(event.revenue, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.green)),
+                      const Text('Revenue', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.kRed,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Back to My Events'),
             ),
           ],
         ),

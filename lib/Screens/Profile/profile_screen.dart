@@ -1,507 +1,423 @@
-import 'package:fizma/Screens/Auth/login_new.dart';
-import 'package:fizma/Screens/Payment_Screens/Payment_screen.dart';
-import 'package:fizma/Screens/Profile/edit_profile.dart';
-import 'package:fizma/Screens/Profile/kyc/buisness_form.dart';
-import 'package:fizma/Screens/navbar/navbar.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizma/Screens/Profile/profile_details_screen.dart';
+import 'package:fizma/Screens/voluteer/VolunteersScreen.dart';
 import 'package:flutter/material.dart';
-// Import your LoginScreen here
-// import 'package:fizma/screens/login_screen.dart'; 
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+class ProfileManagementScreen extends StatelessWidget {
+  const ProfileManagementScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: AppColors.screenGradient,
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Column(
-              children: [
-                const SizedBox(height: 10),
-               _buildProfileCard(context),
-                const SizedBox(height: 16),
-                _buildMenuCard(context),
-                const SizedBox(height: 16),
-                _buildLogoutCard(context),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // --- Profile Header Card ---
-  Widget _buildProfileCard(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Stack(
+    return Scaffold(
+      backgroundColor: const Color(0xFFFDF8F6),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Stack(
-                  alignment: Alignment.bottomRight,
+              // ---------- TOP PROFILE HEADER ----------
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0F2547), // Dark navy blue background
+                ),
+                child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: AppColors.primaryRed,
+                    // Avatar Box
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      alignment: Alignment.center,
                       child: const Text(
-                        'PP',
+                        'AK',
                         style: TextStyle(
-                          color: AppColors.kWhite,
-                          fontSize: 26,
+                          color: Colors.white,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(
-                        color: AppColors.kWhite,
-                        shape: BoxShape.circle,
+                    const SizedBox(width: 14),
+                    // User Info & Badges
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Aryan Kumar',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'aryan@eventforge.io',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF94A3B8),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              // Pro Organizer Badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  'Pro Organizer',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFEF4444),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // KYC Verified Badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDCFCE7),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    Text(
+                                      'KYC',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF16A34A),
+                                      ),
+                                    ),
+                                    SizedBox(width: 2),
+                                    Icon(
+                                      Icons.check_rounded,
+                                      size: 12,
+                                      color: Color(0xFF16A34A),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const OrganizerProfileScreen(),
+                          ),
+                        );
+                      },
                       child: const Icon(
-                        Icons.check_circle,
-                        color: AppColors.primaryRed,
-                        size: 20,
+                        Icons.chevron_right_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 24,
                       ),
                     ),
                   ],
                 ),
               ),
-              Positioned(
-  right: 0,
-  top: 0,
-  child: Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: () {
-        showBasicDetailsDialog(context);
-      },
-      borderRadius: BorderRadius.circular(50),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: const BoxDecoration(
-          color: AppColors.statPinkBg,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.edit_outlined,
-          color: AppColors.primaryRed,
-          size: 18,
-        ),
-      ),
-    ),
-  ),
-),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Pritesh Pawar',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          const Text(
-            'pritesh@gmail.com',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-            decoration: BoxDecoration(
-              color: AppColors.actionRedBg.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                _buildStatItem('EVENTS', '48', AppColors.textPrimary),
-                _buildVerticalDivider(),
-                _buildStatItem('TICKETS', '12.4K', AppColors.primaryRed),
-                _buildVerticalDivider(),
-                _buildStatItem('REVENUE', '₹8.2L', AppColors.textPrimary),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildStatItem(String label, String value, Color valueColor) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+              const SizedBox(height: 20),
 
-  Widget _buildVerticalDivider() {
-    return Container(
-      height: 30,
-      width: 1,
-      color: AppColors.kBorder.withOpacity(0.5),
-    );
-  }
-
-  // --- Menu Card ---
-  Widget _buildMenuCard(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildMenuItem(
-            icon: Icons.storefront_outlined,
-            iconBg: AppColors.chipViewBg,
-            iconColor: AppColors.chipViewFg,
-            title: 'Business Information',
-            onTap: () {
-              Navigator.push(context, 
-              MaterialPageRoute(builder: (context) => const BusinessOnboardingFlow()));
-            },
-          ),
-          _buildMenuItem(
-            icon: Icons.calendar_today_outlined,
-            iconBg: AppColors.statPurpleBg,
-            iconColor: AppColors.statPurpleFg,
-            title: 'My Events',
-            onTap: () {
-              Navigator.push(context, 
-              MaterialPageRoute(builder: (context) => const EventsNavBar(initialIndex: 1)));
-            },
-          ),
-          _buildMenuItem(
-            icon: Icons.account_balance_wallet_outlined,
-            iconBg: AppColors.statGreenBg,
-            iconColor: AppColors.statGreenFg,
-            title: 'Payment',
-            onTap: () {
-              Navigator.push(context, 
-              MaterialPageRoute(builder: (context) => const PaymentScreen()));
-            },
-          ),
-          _buildMenuItem(
-            icon: Icons.notifications_none_outlined,
-            iconBg: AppColors.statOrangeBg,
-            iconColor: AppColors.statOrangeFg,
-            title: 'Notifications',
-            onTap: () {},
-          ),
-          _buildMenuItem(
-            icon: Icons.help_outline_rounded,
-            iconBg: AppColors.chipViewBg,
-            iconColor: AppColors.chipViewFg,
-            title: 'Help & Support',
-            onTap: () {},
-          ),
-          _buildMenuItem(
-            icon: Icons.shield_outlined,
-            iconBg: AppColors.chipViewBg,
-            iconColor: AppColors.chipViewFg,
-            title: 'Privacy Policy',
-            isLast: true,
-            onTap: () {},
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuItem({
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required String title,
-    required VoidCallback onTap,
-    bool isLast = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: iconColor, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textSecondary,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- Log Out Card ---
-  Widget _buildLogoutCard(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.kWhite,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: () => _showLogoutDialog(context), // Logout Dialog trigger
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.actionRedBg,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.logout_rounded,
-                  color: AppColors.primaryRed,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(
+              // ---------- MANAGEMENT SECTION ----------
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  'Log Out',
+                  'MANAGEMENT',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.primaryRed,
+                    color: Color(0xFF9CA3AF),
+                    letterSpacing: 0.8,
                   ),
                 ),
               ),
-              const Icon(
-                Icons.arrow_forward_rounded,
-                color: AppColors.kChipBg,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // -------------------------------------------------------------
-  // Custom Logout Confirmation BottomSheet Dialog
-  // -------------------------------------------------------------
-  void _showLogoutDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: AppColors.kWhite,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(28),
-              topRight: Radius.circular(28),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar at the top
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.kChipBg,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Logout Icon Circle Container
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: const BoxDecoration(
-                  color: AppColors.actionRedBg,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.logout_rounded,
-                  color: AppColors.primaryRed,
-                  size: 32,
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Title
-              const Text(
-                'Log Out',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-
               const SizedBox(height: 8),
 
-              // Subtitle
-              const Text(
-                'Are you sure you want to log out of your account?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFF3F4F6)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildMenuItem(
+                        icon: Icons.location_on_outlined,
+                        iconBg: const Color(0xFFFEE2E2),
+                        iconColor: const Color(0xFFEF4444),
+                        title: 'Venues',
+                        subtitle: 'Manage event locations',
+                        onTap: () {
+                          // Navigate to Venues management screen
+                        },
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                      _buildMenuItem(
+                        icon: Icons.people_alt_outlined,
+                        iconBg: const Color(0xFFEEF2FF),
+                        iconColor: const Color(0xFF6366F1),
+                        title: 'Volunteers',
+                        subtitle: 'Scanning staff & roles',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const VolunteersScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                      _buildMenuItem(
+                        icon: Icons.discount_outlined,
+                        iconBg: const Color(0xFFFEF3C7),
+                        iconColor: const Color(0xFFD97706),
+                        title: 'Coupons & Discounts',
+                        subtitle: 'Create & manage promo codes',
+                        onTap: () {
+                          // Navigate to Coupons management screen
+                        },
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                      _buildMenuItem(
+                        icon: Icons.refresh_rounded,
+                        iconBg: const Color(0xFFE0F2FE),
+                        iconColor: const Color(0xFF0284C7),
+                        title: 'Manage Refunds',
+                        subtitle: 'Approve or dispute requests',
+                        onTap: () {
+                          // Navigate to Refunds management screen
+                        },
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                      _buildMenuItem(
+                        icon: Icons.trending_up_rounded,
+                        iconBg: const Color(0xFFF0FDF4),
+                        iconColor: const Color(0xFF16A34A),
+                        title: 'Transaction History',
+                        subtitle: 'Earnings, commissions & payouts',
+                        onTap: () {
+                          // Navigate to Transaction History screen
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              // Action Buttons Row
-              Row(
-                children: [
-                  // Cancel Button
-                  Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.kBorder, width: 1.2),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          backgroundColor: AppColors.kWhite,
-                        ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+              // ---------- APP SECTION ----------
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'APP',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF9CA3AF),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFF3F4F6)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildMenuItem(
+                        icon: Icons.notifications_none_rounded,
+                        iconBg: const Color(0xFFEEF2FF),
+                        iconColor: const Color(0xFF6366F1),
+                        title: 'Notifications',
+                        subtitle: 'Push & email alerts',
+                        onTap: () {
+                          // Navigate to Notifications screen
+                        },
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                      _buildMenuItem(
+                        icon: Icons.settings_outlined,
+                        iconBg: const Color(0xFFF3F4F6),
+                        iconColor: const Color(0xFF6B7280),
+                        title: 'Settings',
+                        subtitle: 'Account & preferences',
+                        onTap: () {
+                          // Navigate to Settings screen
+                        },
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                      _buildMenuItem(
+                        icon: Icons.shield_outlined,
+                        iconBg: const Color(0xFFDCFCE7),
+                        iconColor: const Color(0xFF16A34A),
+                        title: 'KYC & Verification',
+                        subtitle: 'Business info, KYC, bank details',
+                        onTap: () {
+                          // Navigate to KYC screen
+                        },
+                      ),
+                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                      _buildMenuItem(
+                        icon: Icons.help_outline_rounded,
+                        iconBg: const Color(0xFFFEF3C7),
+                        iconColor: const Color(0xFFD97706),
+                        title: 'Help & Support',
+                        subtitle: 'FAQs and contact us',
+                        onTap: () {
+                          // Navigate to Help & Support screen
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ---------- LOGOUT BUTTON ----------
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {},
+                    icon: const Icon(Icons.logout_rounded, size: 18),
+                    label: const Text('Logout'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFEE2E2),
+                      foregroundColor: const Color(0xFFEF4444),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
+                ),
+              ),
 
-                  const SizedBox(width: 14),
+              const SizedBox(height: 16),
 
-                  // Confirm Logout Button
-                  Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushReplacement(context, 
-                          MaterialPageRoute(builder: (context) => const LoginScreen()));
-                          
-                          
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryRed,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Yes, Log Out',
-                          style: TextStyle(
-                            color: AppColors.kWhite,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+              // ---------- APP VERSION FOOTER ----------
+              const Center(
+                child: Text(
+                  'Fizmaa v2.1.0',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFFD1D5DB),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Reusable List Tile Item Component
+  Widget _buildMenuItem({
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap, // ✅ IMPORTANT FIX: Use the passed onTap
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF9CA3AF),
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFFD1D5DB),
+              size: 20,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,12 +1,30 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- ✅ Internet (already present) -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- ✅ Storage permissions for gallery access -->
+    <!-- For Android < 13 (API 32 and below) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- For Android 10+ (optional, if you also want to save images) -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />  <!-- only needed up to Android 9 -->
+
+    <!-- For Android 13+ (API 33+) – specific media permissions -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!-- (Optional) Agar aap camera se bhi photo lena chahte hain to ye bhi daal den -->
+    <!-- <uses-permission android:name="android.permission.CAMERA" /> -->
+
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
 
     <application
         android:label="fizma"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">   <!-- ✅ ADDED -->
+        android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true">   <!-- ✅ Android 10 ke liye (if targeting older devices) -->
 
         <activity
             android:name=".MainActivity"

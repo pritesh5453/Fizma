@@ -3,9 +3,10 @@ class ApiEndpoints {
 
   static const String baseUrl = "http://fizmaa.gccltd.in";
 
-  // Auth
   static const String organiserLogin = "$baseUrl/api/auth/organiser/login";
-
-  // All events
-  static const String organiserEvents = "/api/Event/events";
+  static const String organiserEvents = "$baseUrl/api/Event/events";
+  static const String createEvent = "$baseUrl/api/Event/Create_events";
+    static String getOrganiserVenues(int organiserId) =>
+      '$baseUrl/api/Event/organiser-venues/organiser_id/$organiserId';
+  
 }
