@@ -1,97 +1,211 @@
+// ✅ Remove self‑import
 import 'package:fizma/Screens/add_event/add_event_slot.dart';
+import 'package:fizma/Screens/add_event/add_venue_slot.dart' hide EventSlot, VenueOption;
 import 'package:fizma/Screens/add_event/create_table_screen.dart';
 import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
-import 'package:fizma/Screens/add_event/create_ticket_n_tables_screen.dart';
-import 'package:fizma/Screens/add_event/event_slot.dart';
+import 'package:fizma/Screens/add_event/create_ticket_n_tables_screen.dart' hide VenueOption;
+import 'package:fizma/Screens/add_event/event_slot.dart' hide EventSlot;   // ✅ brings EventSlot & AddEventSlotSheet
+import 'package:fizma/models_n_services/event_slot/event_slot_svc.dart';
+import 'package:fizma/models_n_services/event_venue/event_venue_model.dart';
+import 'package:fizma/models_n_services/event_venue/event_venue_svc.dart';
+import 'package:fizma/models_n_services/event_slot/event_slot_model.dart';
+import 'package:fizma/models_n_services/venue_list/venue_list_model.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-// ---------- Data Model for Venue & its Specific Slots ----------
 class VenueWithSlots {
   final VenueOption venue;
   final int capacity;
+  final int safetyCap;
   final int? bufferCapacity;
-  final List<EventSlot> slots;
+  final List<EventSlot> slots;   // uses EventSlot from event_slot.dart
 
   VenueWithSlots({
     required this.venue,
     required this.capacity,
+    required this.safetyCap,
     this.bufferCapacity,
     List<EventSlot>? slots,
   }) : slots = slots ?? [];
 }
 
-class VenueOption {
-  final String name;
-  final String city;
-  const VenueOption({required this.name, required this.city});
-}
-
-const List<VenueOption> _venueOptions = [
-  VenueOption(name: 'Manohar Garden', city: 'San Francisco, CA'),
-  VenueOption(name: 'Shankra Banquet', city: 'New York, NY'),
-  VenueOption(name: 'Siddhivinayak Community Hall', city: 'Nashik'),
-];
-
 class AddEventSlotScreen extends StatefulWidget {
-  const AddEventSlotScreen({super.key});
+  final int eventId;
+
+  const AddEventSlotScreen({
+    super.key,
+    required this.eventId,
+  });
 
   @override
   State<AddEventSlotScreen> createState() => _AddEventSlotScreenState();
 }
 
 class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
-  // Multiple Venues List
-  final List<VenueWithSlots> venueList = [];
+  final EventVenueService _venueService = EventVenueService();
+  final EventSlotService _slotService = EventSlotService();
+  List<VenueWithSlots> venueList = [];
+  bool _isLoadingVenues = false;
+  bool _isSubmitting = false;
 
-  // Open Bottom Sheet to Add a New Slot for a Specific Venue
   Future<void> _openAddEventSlotSheet(VenueWithSlots venueData) async {
     final result = await showModalBottomSheet<EventSlot>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddEventSlotSheet(
+      builder: (context) => AddEventSlotSheet(   // ✅ now defined
+        eventId: widget.eventId,
+        venueId: venueData.venue.id,
         venueName: venueData.venue.name,
-        venueCity: venueData.venue.city,
+        venueCity: '',
+        venueCapacity: venueData.capacity,
       ),
     );
 
     if (result != null) {
       setState(() {
-        int pairNumber = (venueData.slots.length ~/ 2) + 1;
-        venueData.slots.add(EventSlot(
-          title: 'Event $pairNumber (Ticket)',
-          date: result.date,
-          startTime: result.startTime,
-          endTime: result.endTime,
-          capacity: result.capacity,
-          actionLabel: 'Create Ticket',
-        ));
-        venueData.slots.add(EventSlot(
-          title: 'Event $pairNumber (Table)',
-          date: result.date,
-          startTime: result.startTime,
-          endTime: result.endTime,
-          capacity: result.capacity,
-          actionLabel: 'Create Table',
-        ));
+        venueData.slots.add(result);
       });
     }
   }
 
-  // Open Bottom Sheet to Select/Add a New Venue
   Future<void> _openVenueLocationSheet() async {
-    final result = await showModalBottomSheet<VenueWithSlots>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _VenueLocationSheet(),
+    setState(() => _isLoadingVenues = true);
+
+    try {
+      final response = await _venueService.getVenuesForEvent(widget.eventId);
+      print('📋 Venues for event ${widget.eventId}:');
+      for (var v in response.venues) {
+        print('   mapping id: ${v.id}, actual venueId: ${v.venueId}, name: ${v.venueName}');
+      }
+
+      if (!mounted) return;
+
+      if (response.venues.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No venues found for this event.')),
+        );
+        setState(() => _isLoadingVenues = false);
+        return;
+      }
+
+      // Use venueId (actual venue ID)
+      final venueOptions = response.venues.map((venue) {
+        return VenueOption(
+          id: venue.venueId,
+          name: venue.venueName,
+          capacity: venue.capacity,
+          safetyCap: venue.safetyCap,
+        );
+      }).toList();
+
+      final result = await showModalBottomSheet<VenueWithSlots>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => _VenueLocationSheet(
+          venues: venueOptions,
+        ),
+      );
+
+      setState(() => _isLoadingVenues = false);
+
+      if (result != null) {
+        final alreadyExists = venueList.any((v) => v.venue.id == result.venue.id);
+        if (alreadyExists) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${result.venue.name} is already added.')),
+          );
+          return;
+        }
+        setState(() {
+          venueList.add(result);
+        });
+      }
+    } catch (e) {
+      setState(() => _isLoadingVenues = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load venues: $e')),
+      );
+    }
+  }
+
+  Future<void> _submitSlots() async {
+    final allSlots = venueList.expand((v) => v.slots).toList();
+
+    if (allSlots.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one slot.')),
+      );
+      return;
+    }
+
+    // Validate registration deadline
+    for (var slot in allSlots) {
+      if (slot.registrationDeadline.isAfter(slot.fromDate)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Registration deadline must be before start date for slot: "${slot.title}"\nPlease delete and re-add this slot.',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final slotItems = allSlots.map((slot) {
+      return SlotItemRequest(
+        slotTitle: slot.title,
+        venueId: slot.venueId,
+        fromDate: slot.formatDateForApi(slot.fromDate),
+        toDate: slot.formatDateForApi(slot.toDate),
+        registrationDeadline: slot.formatDateForApi(slot.registrationDeadline),
+        allDay: slot.allDay,
+        startTime: slot.formatTimeForApi(slot.startTime),
+        endTime: slot.formatTimeForApi(slot.endTime),
+        repeatWeekly: slot.repeatWeekly,
+        repeatDays: slot.repeatDaysAsStrings,
+        status: 'active',
+      );
+    }).toList();
+
+    final request = AddEventSlotRequest(
+      eventId: widget.eventId,
+      step: 4,
+      slots: slotItems,
     );
 
-    if (result != null) {
-      setState(() {
-        venueList.add(result);
-      });
+    try {
+      final response = await _slotService.addEventSlots(request);
+      if (!mounted) return;
+
+      if (response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.message)),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CreateTicketsScreen(
+           
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: ${response.message}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error submitting slots: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -112,8 +226,7 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
                   children: [
                     _buildInfoNoticeCard(),
                     const SizedBox(height: 16),
-                    
-                    // Render list of all selected venues and their slots
+
                     if (venueList.isNotEmpty) ...[
                       ListView.separated(
                         shrinkWrap: true,
@@ -130,7 +243,6 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
                       const SizedBox(height: 16),
                     ],
 
-                    // Button to Add another Venue Location
                     _buildAddVenueButton(),
                   ],
                 ),
@@ -143,7 +255,6 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
     );
   }
 
-  // ---------- Header Top Bar ----------
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -156,21 +267,13 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.kTextDark),
           ),
-          const Text(
-            'Add Event',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.kTextDark,
-            ),
-          ),
+          const Text('Add Event', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.kTextDark)),
           const SizedBox(width: 18),
         ],
       ),
     );
   }
 
-  // ---------- Step Progress Bar ----------
   Widget _buildProgressBar() {
     return Column(
       children: [
@@ -198,14 +301,8 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-              Text(
-                'Step 4 of 6',
-                style: TextStyle(fontSize: 11, color: AppColors.kHint),
-              ),
-              Text(
-                'Sessions',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.kRed),
-              ),
+              Text('Step 4 of 6', style: TextStyle(fontSize: 11, color: AppColors.kHint)),
+              Text('Sessions', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.kRed)),
             ],
           ),
         ),
@@ -213,7 +310,6 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
     );
   }
 
-  // ---------- Info Box ----------
   Widget _buildInfoNoticeCard() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -229,11 +325,7 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
           Expanded(
             child: Text(
               'Sessions are optional. You can skip this step and create tickets directly without scheduling slots.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF1D61E0),
-                height: 1.3,
-              ),
+              style: TextStyle(fontSize: 12, color: Color(0xFF1D61E0), height: 1.3),
             ),
           ),
         ],
@@ -241,24 +333,28 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
     );
   }
 
-  // ---------- Add Venue Trigger Button ----------
   Widget _buildAddVenueButton() {
     return OutlinedButton.icon(
-      onPressed: _openVenueLocationSheet,
+      onPressed: _isLoadingVenues ? null : _openVenueLocationSheet,
       style: OutlinedButton.styleFrom(
         minimumSize: const Size(double.infinity, 48),
         side: const BorderSide(color: AppColors.kRed, width: 1.2),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
-      icon: const Icon(Icons.add, size: 18, color: AppColors.kRed),
+      icon: _isLoadingVenues
+          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.kRed))
+          : const Icon(Icons.add, size: 18, color: AppColors.kRed),
       label: Text(
-        venueList.isEmpty ? 'Add Venue Location' : 'Add Another Venue Location',
+        _isLoadingVenues
+            ? 'Loading Venues...'
+            : venueList.isEmpty
+                ? 'Add Venue Location'
+                : 'Add Another Venue Location',
         style: const TextStyle(color: AppColors.kRed, fontWeight: FontWeight.w600),
       ),
     );
   }
 
-  // ---------- Venue Block & Slots Listing ----------
   Widget _buildVenueSection(VenueWithSlots venueData, int venueIndex) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,17 +367,10 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    venueData.venue.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.kTextDark,
-                    ),
-                  ),
+                  Text(venueData.venue.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.kTextDark)),
                   const SizedBox(height: 2),
                   Text(
-                    '${venueData.venue.city} • Cap. ${venueData.capacity}',
+                    'Cap. ${venueData.capacity} • Safety Cap. ${venueData.safetyCap}',
                     style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.5)),
                   ),
                 ],
@@ -335,24 +424,17 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: (venueData.slots.length / 2).ceil(),
+            itemCount: venueData.slots.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              int ticketIndex = index * 2;
-              int tableIndex = ticketIndex + 1;
-
-              EventSlot ticketSlot = venueData.slots[ticketIndex];
-              EventSlot? tableSlot = tableIndex < venueData.slots.length ? venueData.slots[tableIndex] : null;
-
+              final slot = venueData.slots[index];
               return _buildSlotItemCard(
                 slotNumber: index + 1,
-                ticketSlot: ticketSlot,
-                tableSlot: tableSlot,
+                slot: slot,
                 venueCapacity: venueData.capacity,
                 onDelete: () {
                   setState(() {
-                    venueData.slots.remove(ticketSlot);
-                    if (tableSlot != null) venueData.slots.remove(tableSlot);
+                    venueData.slots.removeAt(index);
                   });
                 },
               );
@@ -362,11 +444,9 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
     );
   }
 
-  // ---------- Slot Form Card UI ----------
   Widget _buildSlotItemCard({
     required int slotNumber,
-    required EventSlot ticketSlot,
-    EventSlot? tableSlot,
+    required EventSlot slot,
     required int venueCapacity,
     required VoidCallback onDelete,
   }) {
@@ -383,12 +463,10 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Slot $slotNumber',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.kTextDark,
+              Expanded(
+                child: Text(
+                  slot.title.isEmpty ? 'Slot $slotNumber' : slot.title,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
                 ),
               ),
               IconButton(
@@ -399,53 +477,55 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          _buildInputLabel('Slot Title'),
-          const SizedBox(height: 4),
-          _buildMockTextField(hint: 'e.g. Music Concert'),
-          const SizedBox(height: 10),
-
-          _buildInputLabel('From Date'),
-          const SizedBox(height: 4),
-          _buildMockTextField(
-            hint: '${ticketSlot.date.day}/${ticketSlot.date.month}/${ticketSlot.date.year}',
-            suffixIcon: Icons.calendar_today_outlined,
-          ),
-          const SizedBox(height: 10),
-
-          _buildInputLabel('To Date'),
-          const SizedBox(height: 4),
-          _buildMockTextField(
-            hint: '${ticketSlot.date.day}/${ticketSlot.date.month}/${ticketSlot.date.year}',
-            suffixIcon: Icons.calendar_today_outlined,
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
 
           Row(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInputLabel('Start Time'),
-                    const SizedBox(height: 4),
-                    _buildMockTextField(hint: ticketSlot.startTime, suffixIcon: Icons.access_time),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInputLabel('End Time'),
-                    const SizedBox(height: 4),
-                    _buildMockTextField(hint: ticketSlot.endTime, suffixIcon: Icons.access_time),
-                  ],
-                ),
+              const Icon(Icons.calendar_today, size: 14, color: AppColors.kHint),
+              const SizedBox(width: 6),
+              Text(
+                '${_formatDate(slot.fromDate)} → ${_formatDate(slot.toDate)}',
+                style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.7)),
               ),
             ],
           ),
+          const SizedBox(height: 4),
+
+          Row(
+            children: [
+              const Icon(Icons.event_available, size: 14, color: AppColors.kRed),
+              const SizedBox(width: 6),
+              Text(
+                'Reg. Deadline: ${_formatDate(slot.registrationDeadline)}',
+                style: TextStyle(fontSize: 12, color: AppColors.kRed.withOpacity(0.7)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+
+          Row(
+            children: [
+              const Icon(Icons.access_time, size: 14, color: AppColors.kHint),
+              const SizedBox(width: 6),
+              Text(
+                slot.allDay ? 'All Day' : '${slot.startTime ?? '--'} → ${slot.endTime ?? '--'}',
+                style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.7)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+
+          if (slot.repeatWeekly && slot.repeatDays.isNotEmpty)
+            Row(
+              children: [
+                const Icon(Icons.event_repeat, size: 14, color: AppColors.kHint),
+                const SizedBox(width: 6),
+                Text(
+                  'Repeats on: ${slot.repeatDays.map((d) => const ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}',
+                  style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.7)),
+                ),
+              ],
+            ),
           const SizedBox(height: 12),
 
           Row(
@@ -456,7 +536,10 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CreateTicketBottomSheet(capacity: venueCapacity),
+                        builder: (context) => CreateTicketBottomSheet(
+                         
+                          capacity: venueCapacity,
+                        ),
                       ),
                     );
                   },
@@ -474,7 +557,10 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CreateTableBottomSheet(capacity: venueCapacity),
+                        builder: (context) => CreateTableBottomSheet(
+                          
+                          capacity: venueCapacity,
+                        ),
                       ),
                     );
                   },
@@ -486,43 +572,16 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
                 ),
               ),
             ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInputLabel(String label) {
-    return Text(
-      label,
-      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w500, color: AppColors.kTextDark),
-    );
-  }
-
-  Widget _buildMockTextField({required String hint, IconData? suffixIcon}) {
-    return Container(
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFFFD1D1), width: 1),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            hint,
-            style: const TextStyle(fontSize: 12.5, color: AppColors.kHint),
           ),
-          if (suffixIcon != null)
-            Icon(suffixIcon, size: 16, color: AppColors.kHint),
         ],
       ),
     );
   }
 
-  // ---------- Bottom Stacked Actions ----------
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
   Widget _buildBottomButtons(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -533,25 +592,24 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
             width: double.infinity,
             height: 46,
             child: OutlinedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CreateTicketsScreen()),
-                );
-              },
+              onPressed: _isSubmitting
+                  ? null
+                  : () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CreateTicketsScreen(
+                           
+                          ),
+                        ),
+                      );
+                    },
               style: OutlinedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFEAEA),
                 side: BorderSide.none,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Text(
-                'Skip Sessions',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.kRed,
-                ),
-              ),
+              child: const Text('Skip Sessions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.kRed)),
             ),
           ),
           const SizedBox(height: 10),
@@ -559,25 +617,16 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CreateTicketsScreen()),
-                );
-              },
+              onPressed: _isSubmitting ? null : _submitSlots,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.kRed,
                 foregroundColor: AppColors.kWhite,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Text(
-                'Save & Proceed to Tickets',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: _isSubmitting
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: AppColors.kWhite))
+                  : const Text('Save & Proceed to Tickets', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -590,7 +639,8 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
 // Bottom sheet: Venue Location Selector
 // =====================================================================
 class _VenueLocationSheet extends StatefulWidget {
-  const _VenueLocationSheet();
+  final List<VenueOption> venues;
+  const _VenueLocationSheet({required this.venues});
 
   @override
   State<_VenueLocationSheet> createState() => _VenueLocationSheetState();
@@ -598,13 +648,6 @@ class _VenueLocationSheet extends StatefulWidget {
 
 class _VenueLocationSheetState extends State<_VenueLocationSheet> {
   VenueOption? _selected;
-  final TextEditingController _capacityController = TextEditingController(text: '2500');
-
-  @override
-  void dispose() {
-    _capacityController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -629,35 +672,51 @@ class _VenueLocationSheetState extends State<_VenueLocationSheet> {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Select Venue Location',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
-          ),
+          const Text('Select Venue Location', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.kTextDark)),
+          const SizedBox(height: 4),
+          Text('${widget.venues.length} venues available', style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.5))),
           const SizedBox(height: 12),
-          ListView.separated(
-            shrinkWrap: true,
-            itemCount: _venueOptions.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final venue = _venueOptions[index];
-              final isSelected = _selected?.name == venue.name;
-              return ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  side: BorderSide(color: isSelected ? AppColors.kRed : const Color(0xFFE5E7EB)),
-                ),
-                title: Text(venue.name, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-                subtitle: Text(venue.city, style: const TextStyle(fontSize: 11.5)),
-                onTap: () => setState(() => _selected = venue),
-              );
-            },
-          ),
+          if (widget.venues.isEmpty)
+            const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('No venues available for this event.')))
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              itemCount: widget.venues.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final venue = widget.venues[index];
+                final isSelected = _selected?.id == venue.id;
+                return ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: isSelected ? AppColors.kRed : const Color(0xFFE5E7EB), width: isSelected ? 2 : 1),
+                  ),
+                  title: Text(venue.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  subtitle: Text(
+                    'Cap. ${venue.capacity} • Safety Cap. ${venue.safetyCap}',
+                    style: TextStyle(fontSize: 11, color: AppColors.kTextDark.withOpacity(0.6)),
+                  ),
+                  trailing: isSelected
+                      ? Container(
+                          width: 24,
+                          height: 24,
+                          decoration: const BoxDecoration(color: AppColors.kRed, shape: BoxShape.circle),
+                          child: const Icon(Icons.check, size: 16, color: Colors.white),
+                        )
+                      : null,
+                  onTap: () => setState(() => _selected = venue),
+                );
+              },
+            ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             height: 46,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.kRed),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.kRed,
+                foregroundColor: Colors.white,
+              ),
               onPressed: _selected == null
                   ? null
                   : () {
@@ -665,13 +724,14 @@ class _VenueLocationSheetState extends State<_VenueLocationSheet> {
                         context,
                         VenueWithSlots(
                           venue: _selected!,
-                          capacity: int.tryParse(_capacityController.text) ?? 2500,
+                          capacity: _selected!.capacity,
+                          safetyCap: _selected!.safetyCap,
                         ),
                       );
                     },
-              child: const Text('Add Venue', style: TextStyle(color: Colors.white)),
+              child: const Text('Add Venue'),
             ),
-          )
+          ),
         ],
       ),
     );

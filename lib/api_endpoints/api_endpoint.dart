@@ -8,5 +8,10 @@ class ApiEndpoints {
   static const String createEvent = "$baseUrl/api/Event/Create_events";
     static String getOrganiserVenues(int organiserId) =>
       '$baseUrl/api/Event/organiser-venues/organiser_id/$organiserId';
-  
+      static const String submitVenues = '$baseUrl/api/Event/venue';
+
+    static String getEventVenues(int eventId) =>
+      '$baseUrl/api/Event/venue/event/$eventId';
+
+      static const String addEventSlots = '$baseUrl/api/Event/add-event-slot';
 }

@@ -9,12 +9,18 @@ class EventService {
   final Dio _dio;
   EventService({Dio? dio}) : _dio = dio ?? Dio();
 
-  // ---------- Step 1 – Create Event (unchanged) ----------
+  // ---------- Step 1 – Create Event ----------
   Future<EventResponse> createEvent(EventCreateRequest request) async {
+    print("🟢 [EventService] createEvent() called");
     final url = ApiEndpoints.createEvent;
     final payload = request.toApiPayload();
 
+    print("📡 URL: $url");
+    print("📦 Payload: $payload");
+
     final token = await AppPreferences.getToken();
+    print("🔑 Token: ${token != null ? 'Present (${token.substring(0, 10)}...)' : 'NULL'}");
+
     final headers = <String, dynamic>{
       'Content-Type': 'application/x-www-form-urlencoded',
     };
@@ -26,21 +32,26 @@ class EventService {
         data: payload,
         options: Options(contentType: Headers.formUrlEncodedContentType, headers: headers),
       );
-      print('API RESPONSE >>> ${response.data}');
+      print("✅ API RESPONSE >>> ${response.data}");
+      print("📊 Status Code: ${response.statusCode}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return EventResponse.fromJson(response.data);
+        final result = EventResponse.fromJson(response.data);
+        print("🎯 Event created! eventId: ${result.eventId}");
+        return result;
       } else {
         throw Exception('Event creation failed: ${response.data}');
       }
     } on DioException catch (e) {
+      print("❌ DioError: ${e.response?.data ?? e.message}");
       throw Exception('Dio error: ${e.response?.data ?? e.message}');
     } catch (e) {
+      print("❌ Unexpected error: $e");
       throw Exception('Unexpected error: $e');
     }
   }
 
-  // ---------- Step 2 – One Multipart Request (text + files) ----------
+  // ---------- Step 2 – Multipart Request ----------
   Future<void> updateEventStep2WithMultipart({
     required int eventId,
     required int organiserId,
@@ -51,11 +62,25 @@ class EventService {
     File? bannerVertical,
     File? promoVideoFile,
     List<File>? galleryImages,
-    List<File?>? sponsorLogoHorizontal, // list of horizontal logos (order matches sponsors)
-    List<File?>? sponsorLogoVertical,   // list of vertical logos (order matches sponsors)
+    List<File?>? sponsorLogoHorizontal,
+    List<File?>? sponsorLogoVertical,
   }) async {
+    print("🟢 [EventService] updateEventStep2WithMultipart() called");
+    print("📌 eventId: $eventId");
+    print("📌 organiserId: $organiserId");
+    print("📌 promotionalVideoUrl: $promotionalVideoUrl");
+    print("📌 sponsors: ${sponsors.length}");
+    print("📌 collaborators: ${collaborators.length}");
+    print("📌 bannerHorizontal: ${bannerHorizontal != null ? bannerHorizontal.path : 'null'}");
+    print("📌 bannerVertical: ${bannerVertical != null ? bannerVertical.path : 'null'}");
+    print("📌 promoVideoFile: ${promoVideoFile != null ? promoVideoFile.path : 'null'}");
+    print("📌 galleryImages: ${galleryImages?.length ?? 0}");
+    print("📌 sponsorLogoHorizontal: ${sponsorLogoHorizontal?.length ?? 0}");
+    print("📌 sponsorLogoVertical: ${sponsorLogoVertical?.length ?? 0}");
+
     final url = ApiEndpoints.createEvent;
     final token = await AppPreferences.getToken();
+    print("🔑 Token: ${token != null ? 'Present (${token.substring(0, 10)}...)' : 'NULL'}");
 
     final formData = FormData();
 
@@ -67,14 +92,14 @@ class EventService {
       MapEntry('promotional_video_url', promotionalVideoUrl),
     ]);
 
-    // Sponsors – flatten into arrays (same key repeated)
+    // Sponsors
     for (var s in sponsors) {
       formData.fields.add(MapEntry('sponsor_name[]', s['name']?.toString() ?? ''));
       formData.fields.add(MapEntry('sponsor_type[]', s['type']?.toString() ?? ''));
       formData.fields.add(MapEntry('sponsor_website[]', s['website']?.toString() ?? ''));
     }
 
-    // Collaborators – flatten into arrays
+    // Collaborators
     for (var c in collaborators) {
       formData.fields.add(MapEntry('collaborator_name[]', c['name']?.toString() ?? ''));
       formData.fields.add(MapEntry('collaborator_phone[]', c['phone']?.toString() ?? ''));
@@ -102,7 +127,6 @@ class EventService {
         await MultipartFile.fromFile(promoVideoFile.path, filename: 'promo_video.mp4'),
       ));
     }
-    // Gallery – multiple files with key 'gallery'
     if (galleryImages != null) {
       for (var file in galleryImages) {
         formData.files.add(MapEntry(
@@ -111,7 +135,6 @@ class EventService {
         ));
       }
     }
-    // Sponsor logos – horizontal
     if (sponsorLogoHorizontal != null) {
       for (var file in sponsorLogoHorizontal) {
         if (file != null) {
@@ -122,7 +145,6 @@ class EventService {
         }
       }
     }
-    // Sponsor logos – vertical
     if (sponsorLogoVertical != null) {
       for (var file in sponsorLogoVertical) {
         if (file != null) {
@@ -139,19 +161,26 @@ class EventService {
       'Content-Type': 'multipart/form-data',
     };
 
+    print("📡 Sending multipart request to: $url");
+    print("📦 FormData fields: ${formData.fields.length}");
+    print("📦 FormData files: ${formData.files.length}");
+
     try {
       final response = await _dio.post(
         url,
         data: formData,
         options: Options(headers: headers),
       );
-      print('Multipart Step 2 RESPONSE >>> ${response.data}');
+      print("✅ Multipart Step 2 RESPONSE >>> ${response.data}");
+      print("📊 Status Code: ${response.statusCode}");
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Step 2 failed: ${response.data}');
       }
     } on DioException catch (e) {
+      print("❌ DioError: ${e.response?.data ?? e.message}");
       throw Exception('Dio error: ${e.response?.data ?? e.message}');
     } catch (e) {
+      print("❌ Unexpected error: $e");
       throw Exception('Unexpected error: $e');
     }
   }

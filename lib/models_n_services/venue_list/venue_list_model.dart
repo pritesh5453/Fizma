@@ -1,14 +1,20 @@
+// lib/models_n_services/venue_list/venue_list_model.dart
+
 class VenueOption {
+  final int id;
   final String name;
-  final String city;
+  final String? city;      // optional – abhi use nahi hai
   final int capacity;
-  final String type;
+  final int safetyCap;     // ✅ added
+  final String? type;      // optional – abhi use nahi hai
 
   const VenueOption({
+    required this.id,
     required this.name,
-    required this.city,
+    this.city,
     required this.capacity,
-    required this.type,
+    required this.safetyCap,
+    this.type,
   });
 }
 
@@ -105,7 +111,6 @@ class Venue {
     };
   }
 
-  // ✅ Convert Venue to VenueOption (for dropdown)
   VenueOption toVenueOption() {
     String city = 'Unknown Location';
     if (exactAddress != null && exactAddress!.isNotEmpty) {
@@ -113,9 +118,11 @@ class Venue {
       if (parts.isNotEmpty) city = parts.last.trim();
     }
     return VenueOption(
+      id: id,
       name: venueName,
       city: city,
-      capacity: 0, // API does not return capacity
+      capacity: 0,
+      safetyCap: 0,
       type: venueType,
     );
   }

@@ -1,7 +1,10 @@
+import 'package:fizma/Screens/add_event/add_event_slot.dart';
 import 'package:fizma/Screens/add_event/add_venue_slot.dart' hide VenueOption;
 import 'package:fizma/models_n_services/add_venue/add_venue_model.dart';
 import 'package:fizma/models_n_services/venue_list/venue_list_svc.dart';
 import 'package:fizma/models_n_services/venue_list/venue_list_model.dart';
+import 'package:fizma/models_n_services/venue_submit/venue_request_model.dart';
+import 'package:fizma/models_n_services/venue_submit/venue_request_svc.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
@@ -57,20 +60,17 @@ class VenueEntry {
     String? capacity,
     String? safetyCap,
   }) {
-    // Create a new entry but keep existing controllers if not replaced
     final newEntry = VenueEntry(
       id: id ?? this.id,
       selectedVenue: selectedVenue ?? this.selectedVenue,
       capacity: capacity ?? this.capacity,
       safetyCap: safetyCap ?? this.safetyCap,
     );
-    // Transfer controllers if they exist
     if (_capacityController != null) newEntry._capacityController = _capacityController;
     if (_safetyCapController != null) newEntry._safetyCapController = _safetyCapController;
     return newEntry;
   }
 
-  // Clean up controllers when entry is removed
   void dispose() {
     _capacityController?.dispose();
     _safetyCapController?.dispose();
@@ -108,6 +108,10 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
   List<VenueOption> _apiVenues = [];
   bool _isLoadingVenues = false;
   String _venuesError = '';
+
+  // ---------- Submit Service ----------
+  final VenueSubmitService _submitService = VenueSubmitService();
+  bool _isSubmitting = false;
 
   // ---------- Existing UI state ----------
   int _selectedTab = 0;
@@ -167,7 +171,6 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
     _searchController.dispose();
     _newVenueNameController.dispose();
     _newAddressController.dispose();
-    // Dispose all venue entry controllers
     for (var entry in _venues) {
       entry.dispose();
     }
@@ -184,7 +187,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
     if (_venues.length <= 1) return;
     final index = _venues.indexWhere((v) => v.id == id);
     if (index != -1) {
-      _venues[index].dispose(); // Clean up controllers
+      _venues[index].dispose();
       setState(() {
         _venues.removeAt(index);
         _isDropdownOpen = false;
@@ -195,22 +198,14 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
   void _updateVenue(String id, VenueEntry updated) {
     final index = _venues.indexWhere((v) => v.id == id);
     if (index != -1) {
-      // Dispose old entry's controllers if replaced entirely
-      if (_venues[index] != updated) {
-        // If the entry is being replaced, we need to transfer controllers carefully.
-        // Our copyWith already transfers controllers, so just replace.
-        setState(() {
-          _venues[index] = updated;
-        });
-      } else {
-        setState(() {});
-      }
+      setState(() {
+        _venues[index] = updated;
+      });
     }
   }
 
   // ---------- Handle Save New Venue (API Call) ----------
   Future<void> _handleAddNewVenue() async {
-    // Validate inputs
     if (_newVenueNameController.text.trim().isEmpty) {
       _showSnackBar('Please enter venue name');
       return;
@@ -227,7 +222,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
       venueName: _newVenueNameController.text.trim(),
       exactAddress: _newAddressController.text.trim(),
       googleMapsLink: _newAddressController.text.trim(),
-      latitude: 0.0, // You can integrate a map picker later
+      latitude: 0.0,
       longitude: 0.0,
       venueType: _selectedVenueType,
     );
@@ -237,15 +232,9 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
       if (!mounted) return;
 
       _showSnackBar('Venue added successfully!');
-
-      // Clear form
       _newVenueNameController.clear();
       _newAddressController.clear();
-
-      // Refresh venue list
       await _fetchVenues();
-
-      // Switch to "Select Existing" tab
       setState(() {
         _selectedTab = 0;
       });
@@ -254,6 +243,79 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
       _showSnackBar('Failed to add venue: $e');
     } finally {
       if (mounted) setState(() => _isSubmittingVenue = false);
+    }
+  }
+
+  // ---------- Submit selected venues for the event ----------
+  Future<void> _handleSubmitVenues() async {
+    // Validate each venue entry
+    for (var entry in _venues) {
+      if (entry.selectedVenue == null) {
+        _showSnackBar('Please select a venue for all entries.');
+        return;
+      }
+      if (entry.capacity.trim().isEmpty) {
+        _showSnackBar('Please enter capacity for all venues.');
+        return;
+      }
+      if (int.tryParse(entry.capacity.trim()) == null) {
+        _showSnackBar('Capacity must be a valid number.');
+        return;
+      }
+      // Safety cap optional – if provided, must be number
+      if (entry.safetyCap.trim().isNotEmpty && int.tryParse(entry.safetyCap.trim()) == null) {
+        _showSnackBar('Safety cap must be a valid number.');
+        return;
+      }
+    }
+
+    setState(() => _isSubmitting = true);
+
+    // Build request
+    final venueItems = _venues.map((entry) {
+      final cap = int.parse(entry.capacity.trim());
+      final safety = entry.safetyCap.trim().isEmpty
+          ? 0
+          : int.tryParse(entry.safetyCap.trim()) ?? 0;
+      return VenueItemRequest(
+        venueId: entry.selectedVenue!.id,
+        venueName: entry.selectedVenue!.name,
+        capacity: cap,
+        safetyCap: safety,
+      );
+    }).toList();
+
+    final request = VenueSubmitRequest(
+      eventId: int.tryParse(widget.eventId) ?? 0,
+      organiserId: widget.organiserId,
+      step: 3,
+      venues: venueItems,
+    );
+
+    try {
+      final response = await _submitService.submitVenues(request);
+      if (!mounted) return;
+
+      if (response.success) {
+        _showSnackBar(response.message);
+        
+        // ✅ Navigate to next screen – ONLY EVENT ID PASSED
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddEventSlotScreen(
+              eventId: int.tryParse(widget.eventId) ?? 0,
+            ),
+          ),
+        );
+      } else {
+        _showSnackBar('Failed: ${response.message}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Error submitting venues: $e');
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -884,7 +946,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${venue.city} · Cap. ${venue.capacity}',
+                                '${venue.city ?? ''} · Cap. ${venue.capacity}',
                                 style: TextStyle(fontSize: 10, color: AppColors.kTextDark.withOpacity(0.45)),
                               ),
                               const SizedBox(height: 4),
@@ -895,7 +957,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  venue.type,
+                                  venue.type ?? '', // ✅ null safety fix
                                   style: const TextStyle(fontSize: 9, color: Color(0xFF3B82F6), fontWeight: FontWeight.w500),
                                 ),
                               ),
@@ -1038,12 +1100,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
       child: SizedBox(
         height: 48,
         child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddEventSlotScreen()),
-            );
-          },
+          onPressed: _isSubmitting ? null : _handleSubmitVenues,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.kRed,
             foregroundColor: AppColors.kWhite,
@@ -1052,10 +1109,16 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text(
-            'Save & Proceed to Sessions',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          ),
+          child: _isSubmitting
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2.4, color: AppColors.kWhite),
+                )
+              : const Text(
+                  'Save & Proceed to Sessions',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
         ),
       ),
     );
