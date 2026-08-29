@@ -1,33 +1,22 @@
+import 'package:fizma/Screens/add_event/add_venue_slot.dart' hide VenueOption;
 import 'package:fizma/Screens/add_event/add_volunteer/voluteer_list_screen.dart';
 import 'package:fizma/Screens/add_event/create_table_screen.dart';
 import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
+import 'package:fizma/Screens/add_event/event_slot.dart';
+import 'package:fizma/models_n_services/venue_list/venue_list_model.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-// ---------- Models ----------
-class VenueOption {
-  final String name;
-  final String city;
-  final String type;
-  final int capacity;
-
-  const VenueOption({
-    required this.name,
-    required this.city,
-    this.type = 'Indoor',
-    this.capacity = 2500,
-  });
-}
-
 class CreateTicketsScreen extends StatefulWidget {
-  final List<VenueOption> selectedVenues;
+  final int eventId;
+  final int organiserId;
+  final List<VenueWithSlots> venuesWithSlots;
 
   const CreateTicketsScreen({
     super.key,
-    this.selectedVenues = const [
-      VenueOption(name: 'Manohar Garden', city: 'San Francisco, CA', capacity: 2500, type: 'Indoor'),
-      VenueOption(name: 'Shankra Banquet', city: 'New York, NY', capacity: 350, type: 'Outdoor'),
-    ],
+    required this.eventId,
+    required this.organiserId,
+    required this.venuesWithSlots,
   });
 
   @override
@@ -36,45 +25,47 @@ class CreateTicketsScreen extends StatefulWidget {
 
 class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
   int _activeVenueIndex = 0;
-  String _selectedSessionFilter = 'All Sessions';
-  int _selectedTabIndex = 0; // 0 = Tickets, 1 = Tables
+  String _selectedSessionFilter = '';
+  int _selectedSlotId = 0;
+  int _selectedTabIndex = 0;
 
-  final List<String> _sessionFilters = ['All Sessions', 'Morning', 'Afternoon'];
+  // ✅ Returns only real slots (no "All Sessions")
+  List<MapEntry<String, int>> get _slotFilters {
+    if (widget.venuesWithSlots.isEmpty) return [];
+    final slots = widget.venuesWithSlots[_activeVenueIndex].slots;
+    // ✅ Only include slots with non-null id
+    return slots.where((s) => s.id != null).map((s) => MapEntry(s.title, s.id!)).toList();
+  }
 
-  // ---------- State for Tickets & Tables per venue ----------
-  // Each venue has its own list of tickets and tables
   late List<List<TicketTier>> _venueTickets;
   late List<List<TableTier>> _venueTables;
 
   @override
   void initState() {
     super.initState();
-    // Initialize empty lists for each venue
-    _venueTickets = List.generate(
-      widget.selectedVenues.length,
-      (index) => [],
-    );
-    _venueTables = List.generate(
-      widget.selectedVenues.length,
-      (index) => [],
-    );
+    final venueCount = widget.venuesWithSlots.length;
+    _venueTickets = List.generate(venueCount, (_) => []);
+    _venueTables = List.generate(venueCount, (_) => []);
+    // Default to first slot
+    final filters = _slotFilters;
+    if (filters.isNotEmpty) {
+      _selectedSlotId = filters.first.value;
+      _selectedSessionFilter = filters.first.key;
+    }
   }
 
-  // ---------- Add Ticket to the current venue ----------
   void _addTicket(TicketTier ticket) {
     setState(() {
       _venueTickets[_activeVenueIndex].add(ticket);
     });
   }
 
-  // ---------- Add Table to the current venue ----------
   void _addTable(TableTier table) {
     setState(() {
       _venueTables[_activeVenueIndex].add(table);
     });
   }
 
-  // ---------- Toggle Ticket Active Status ----------
   void _toggleTicketActive(int venueIndex, int ticketIndex) {
     setState(() {
       _venueTickets[venueIndex][ticketIndex].isActive =
@@ -82,7 +73,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     });
   }
 
-  // ---------- Toggle Table Active Status ----------
   void _toggleTableActive(int venueIndex, int tableIndex) {
     setState(() {
       _venueTables[venueIndex][tableIndex].isActive =
@@ -92,10 +82,16 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeVenue = widget.selectedVenues.isNotEmpty
-        ? widget.selectedVenues[_activeVenueIndex]
-        : const VenueOption(name: 'No Venue', city: '');
+    if (widget.venuesWithSlots.isEmpty) {
+      return Scaffold(
+        body: Center(
+          child: Text('No venues selected. Please go back and add venues.'),
+        ),
+      );
+    }
 
+    final activeVenueData = widget.venuesWithSlots[_activeVenueIndex];
+    final activeVenue = activeVenueData.venue;
     final currentTickets = _venueTickets[_activeVenueIndex];
     final currentTables = _venueTables[_activeVenueIndex];
 
@@ -157,6 +153,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
+  // ---------- Header ----------
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -183,6 +180,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
+  // ---------- Progress Bar ----------
   Widget _buildProgressBar() {
     return Column(
       children: [
@@ -225,18 +223,30 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
+  // ---------- Venue Selector ----------
   Widget _buildVenueSelectorList() {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: widget.selectedVenues.length,
+      itemCount: widget.venuesWithSlots.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        final venue = widget.selectedVenues[index];
+        final venueData = widget.venuesWithSlots[index];
+        final venue = venueData.venue;
         final isActive = _activeVenueIndex == index;
+        final city = venue.city ?? 'Unknown Location';
 
         return GestureDetector(
-          onTap: () => setState(() => _activeVenueIndex = index),
+          onTap: () {
+            setState(() {
+              _activeVenueIndex = index;
+              final filters = _slotFilters;
+              if (filters.isNotEmpty) {
+                _selectedSlotId = filters.first.value;
+                _selectedSessionFilter = filters.first.key;
+              }
+            });
+          },
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -273,7 +283,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${venue.city} · Cap. ${venue.capacity}',
+                        '$city · Cap. ${venue.capacity}',
                         style: const TextStyle(fontSize: 11.5, color: AppColors.kHint),
                       ),
                       const SizedBox(height: 4),
@@ -284,7 +294,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          venue.type,
+                          venue.type ?? 'Venue',
                           style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
                         ),
                       ),
@@ -322,34 +332,47 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
+  // ---------- Session Filter Chips ----------
   Widget _buildSessionFilterChips() {
-    return Row(
-      children: _sessionFilters.map((filter) {
-        final isSelected = _selectedSessionFilter == filter;
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: ChoiceChip(
-            label: Text(filter),
-            selected: isSelected,
-            onSelected: (_) => setState(() => _selectedSessionFilter = filter),
-            selectedColor: AppColors.kRed,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            pressElevation: 0,
-            side: BorderSide.none,
-            labelStyle: TextStyle(
-              fontSize: 12.5,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.white : const Color(0xFF757575),
+    final filters = _slotFilters;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: filters.map((entry) {
+          final filter = entry.key;
+          final slotId = entry.value;
+          final isSelected = _selectedSessionFilter == filter;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(filter),
+              selected: isSelected,
+              onSelected: (_) {
+                setState(() {
+                  _selectedSessionFilter = filter;
+                  _selectedSlotId = slotId;
+                });
+              },
+              selectedColor: AppColors.kRed,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              pressElevation: 0,
+              side: BorderSide.none,
+              labelStyle: TextStyle(
+                fontSize: 12.5,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? Colors.white : const Color(0xFF757575),
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             ),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 
+  // ---------- Venue Session Badge ----------
   Widget _buildVenueSessionBadge(VenueOption venue) {
     return Container(
       width: double.infinity,
@@ -384,7 +407,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
-  // ---------- Main Inventory Card with Tickets/Tables Display ----------
+  // ---------- Main Inventory Card ----------
   Widget _buildInventoryCard(
     VenueOption activeVenue,
     List<TicketTier> tickets,
@@ -408,7 +431,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
       ),
       child: Column(
         children: [
-          // ---------- Segmented Control ----------
+          // Segmented Control
           Container(
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
@@ -472,7 +495,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
           ),
           const SizedBox(height: 16),
 
-          // ---------- Header Row ----------
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -489,19 +512,18 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                   if (isTicketTab) {
                     final ticket = await showCreateTicketBottomSheet(
                       context,
-                      activeVenue.capacity,
+                      eventId: widget.eventId,
+                      venueId: activeVenue.id,
+                      slotId: _selectedSlotId,
+                      capacity: activeVenue.capacity,
                     );
-                    if (ticket != null) {
-                      _addTicket(ticket);
-                    }
+                    if (ticket != null) _addTicket(ticket);
                   } else {
                     final table = await showCreateTableBottomSheet(
                       context,
                       activeVenue.capacity,
                     );
-                    if (table != null) {
-                      _addTable(table);
-                    }
+                    if (table != null) _addTable(table);
                   }
                 },
                 child: Text(
@@ -517,7 +539,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
           ),
           const SizedBox(height: 14),
 
-          // ---------- List of Items (Tickets or Tables) ----------
           if (items.isEmpty)
             _buildEmptyState(activeVenue, isTicketTab)
           else
@@ -592,7 +613,10 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
               if (isTicket) {
                 final ticket = await showCreateTicketBottomSheet(
                   context,
-                  activeVenue.capacity,
+                  eventId: widget.eventId,
+                  venueId: activeVenue.id,
+                  slotId: _selectedSlotId,
+                  capacity: activeVenue.capacity,
                 );
                 if (ticket != null) _addTicket(ticket);
               } else {
@@ -851,6 +875,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
+  // ---------- Bottom Button ----------
   Widget _buildBottomButton() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -859,8 +884,16 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
         height: 48,
         child: ElevatedButton(
           onPressed: () {
-            Navigator.push(context, 
-            MaterialPageRoute(builder: (context) => const AssignVolunteersScreen()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AssignVolunteersScreen(
+                  eventId: widget.eventId,
+                  organiserId: widget.organiserId,
+                  venues: widget.venuesWithSlots,
+                ),
+              ),
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.kRed,

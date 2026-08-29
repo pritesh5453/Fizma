@@ -1,22 +1,15 @@
 import 'package:fizma/Screens/add_event/add_event_screen.dart';
 import 'package:fizma/Screens/navbar/navbar.dart';
+import 'package:fizma/models_n_services/publish_event/publish_event_model.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class EventPublishedSuccessScreen extends StatefulWidget {
-  final String eventTitle;
-  final String organizerName;
-  final String languages;
-  final String eventId;
-  final String venueLocation;
+  final PublishedEventData? eventData;
 
   const EventPublishedSuccessScreen({
     super.key,
-    this.eventTitle = 'Bhajan Concert 2026',
-    this.organizerName = 'Anup Jain',
-    this.languages = 'Hindi, Marathi',
-    this.eventId = 'EVT-2026-01',
-    this.venueLocation = 'Manohar Garden, Nashik',
+    this.eventData,
   });
 
   @override
@@ -31,7 +24,6 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
   @override
   void initState() {
     super.initState();
-    // Continuous horizontal moving animation for the tick mark
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -48,10 +40,20 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
     super.dispose();
   }
 
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final data = widget.eventData;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F8F0), // Mint Light Green Background
+      backgroundColor: const Color(0xFFE8F8F0),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -60,7 +62,7 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
             children: [
               const Spacer(),
 
-              // ---------- MOVING TICK MARK ICON ----------
+              // ---------- MOVING TICK MARK ----------
               AnimatedBuilder(
                 animation: _horizontalAnimation,
                 builder: (context, child) {
@@ -70,7 +72,7 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
                       width: 90,
                       height: 90,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981), // Emerald Green
+                        color: const Color(0xFF10B981),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -91,7 +93,7 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
               ),
               const SizedBox(height: 24),
 
-              // ---------- TITLE TEXT WITH PARTY POPPER ----------
+              // ---------- TITLE ----------
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
@@ -104,15 +106,12 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
                     ),
                   ),
                   SizedBox(width: 6),
-                  Text(
-                    '🎉',
-                    style: TextStyle(fontSize: 22),
-                  ),
+                  Text('🎉', style: TextStyle(fontSize: 22)),
                 ],
               ),
               const SizedBox(height: 28),
 
-              // ---------- WHITE DETAILS CARD ----------
+              // ---------- DETAILS CARD ----------
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -130,7 +129,7 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Calendar Pink Icon Box
+                    // Calendar Icon
                     Container(
                       width: 48,
                       height: 48,
@@ -146,52 +145,49 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
                     ),
                     const SizedBox(height: 14),
 
-                    // Event Title
+                    // Event Name
                     Text(
-                      widget.eventTitle,
+                      data?.eventName ?? 'Your Event',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.kTextDark,
                       ),
                     ),
                     const SizedBox(height: 6),
 
-                    // Organizer | Languages | Event ID
-                    Text(
-                      'By : ${widget.organizerName} | ${widget.languages} | ID : ${widget.eventId}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: Color(0xFF8E8E93),
+                    // Status & Date
+                    if (data != null) ...[
+                      Text(
+                        'Status: ${data.status.toUpperCase()}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: data.status == 'live' ? Colors.green : Colors.orange,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Venue Location
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 15,
+                      const SizedBox(height: 4),
+                      Text(
+                        'Date: ${_formatDate(data.eventDate)}',
+                        style: const TextStyle(
+                          fontSize: 13,
                           color: Color(0xFF8E8E93),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.venueLocation,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF8E8E93),
-                          ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Event ID: ${data.id}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF8E8E93),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
+
                     const SizedBox(height: 20),
 
-                    // Green Live Notice Ribbon
+                    // Live Notice
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -211,14 +207,18 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
                     ),
                     const SizedBox(height: 20),
 
-                    // Primary Button: View My Events
+                    // View My Events
                     SizedBox(
                       width: double.infinity,
                       height: 46,
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.push(context, 
-                          MaterialPageRoute(builder: (context) => const EventsNavBar(initialIndex: 1)));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const EventsNavBar(initialIndex: 1),
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.kRed,
@@ -230,23 +230,24 @@ class _EventPublishedSuccessScreenState extends State<EventPublishedSuccessScree
                         ),
                         child: const Text(
                           'View My Events',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
                     const SizedBox(height: 10),
 
-                    // Secondary Button: Create Another Event
+                    // Create Another Event
                     SizedBox(
                       width: double.infinity,
                       height: 46,
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.push(context, 
-                          MaterialPageRoute(builder: (context) => const AddEventScreen()));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AddEventScreen(),
+                            ),
+                          );
                         },
                         style: OutlinedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFEAEA),

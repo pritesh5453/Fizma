@@ -1,4 +1,6 @@
 import 'package:fizma/Screens/add_event/create_ticket/PreviewTicketScreen.dart';
+import 'package:fizma/models_n_services/create_ticket_model.dart/create_ticket_model.dart';
+import 'package:fizma/models_n_services/create_ticket_model.dart/create_ticket_svc.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
@@ -9,7 +11,7 @@ class TicketTier {
   final int totalTickets;
   final double price;
   final int maxPerPerson;
-  bool isActive;   // 👈 final hata diya
+  bool isActive;
   final bool isFree;
   final bool isDynamicPricing;
   final String ageRestriction;
@@ -44,11 +46,14 @@ class _AdditionalField {
   static const int maxCharacterLimit = 500;
 }
 
-// ---------- Function to show bottom sheet ----------
+// ---------- Function to show bottom sheet (updated signature) ----------
 Future<TicketTier?> showCreateTicketBottomSheet(
-  BuildContext context,
-  int capacity,
-) {
+   BuildContext context, {
+  required int eventId,
+  required int venueId,
+  required int slotId,   // non-nullable
+  required int capacity,
+}) {
   return showModalBottomSheet<TicketTier>(
     context: context,
     isScrollControlled: true,
@@ -57,14 +62,29 @@ Future<TicketTier?> showCreateTicketBottomSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => CreateTicketBottomSheet(capacity: capacity),
+    builder: (context) => CreateTicketBottomSheet(
+      eventId: eventId,
+      venueId: venueId,
+      slotId: slotId,
+      capacity: capacity,
+    ),
   );
 }
 
 // ---------- Bottom Sheet Widget ----------
 class CreateTicketBottomSheet extends StatefulWidget {
+  final int eventId;
+  final int venueId;
+  final int slotId; 
   final int capacity;
-  const CreateTicketBottomSheet({super.key, required this.capacity});
+
+  const CreateTicketBottomSheet({
+    super.key,
+    required this.eventId,
+    required this.venueId,
+    required this.slotId,
+    required this.capacity,
+  });
 
   @override
   State<CreateTicketBottomSheet> createState() =>
@@ -89,9 +109,9 @@ class _CreateTicketBottomSheetState extends State<CreateTicketBottomSheet> {
   final TextEditingController advancePercentController =
       TextEditingController(text: '50');
   final TextEditingController eventStartController =
-      TextEditingController(text: '29 Jan 2025');
+      TextEditingController(text: '2026-08-24 10:00:00');
   final TextEditingController eventEndController =
-      TextEditingController(text: '30 Jan 2025');
+      TextEditingController(text: '2026-09-30 23:59:59');
   final TextEditingController minTicketsController =
       TextEditingController(text: '1');
   final TextEditingController maxTicketsController =
@@ -99,9 +119,9 @@ class _CreateTicketBottomSheetState extends State<CreateTicketBottomSheet> {
 
   final List<Map<String, TextEditingController>> guestControllers = [
     {
-      'mobile': TextEditingController(text: ''),
+      'mobile': TextEditingController(text: '9876543210'),
       'name': TextEditingController(text: 'Guest 1'),
-      'email': TextEditingController(text: ''),
+      'email': TextEditingController(text: 'guest1@gmail.com'),
     }
   ];
 
@@ -119,7 +139,8 @@ class _CreateTicketBottomSheetState extends State<CreateTicketBottomSheet> {
   int otherCount = 0;
 
   final List<Map<String, TextEditingController>> addOns = [
-    {'title': TextEditingController(), 'price': TextEditingController()},
+    {'title': TextEditingController(text: 'Food Coupon'), 'price': TextEditingController(text: '100')},
+    {'title': TextEditingController(text: 'Parking Pass'), 'price': TextEditingController(text: '50')},
   ];
 
   String _selectedAgeRestriction = 'All Ages';
@@ -127,6 +148,10 @@ class _CreateTicketBottomSheetState extends State<CreateTicketBottomSheet> {
 
   static const int _descriptionMaxLength = 300;
   int _descriptionLength = 0;
+
+  // ---------- API Service ----------
+  final CreateTicketService _ticketService = CreateTicketService();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -172,6 +197,138 @@ class _CreateTicketBottomSheetState extends State<CreateTicketBottomSheet> {
       f.maxLengthController.dispose();
     }
     super.dispose();
+  }
+
+  // ---------- Submit Ticket API Call ----------
+  Future<void> _submitTicket() async {
+    // Basic validations
+    if (ticketNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter ticket name')),
+      );
+      return;
+    }
+    final totalTickets = int.tryParse(totalTicketsController.text.trim()) ?? 0;
+    if (totalTickets <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Total tickets must be greater than 0')),
+      );
+      return;
+    }
+    final price = double.tryParse(ticketPriceController.text.trim()) ?? 0.0;
+    if (!freeTicket && price < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Price cannot be negative')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    // Build guest list
+    final guestList = guestControllers
+        .where((g) => g['mobile']!.text.trim().isNotEmpty)
+        .map((g) => Guest(
+              mobile: g['mobile']!.text.trim(),
+              name: g['name']!.text.trim(),
+              email: g['email']!.text.trim(),
+            ))
+        .toList();
+
+    // Build addons
+    final addons = addOns
+        .where((a) =>
+            a['title']!.text.trim().isNotEmpty &&
+            int.tryParse(a['price']!.text.trim()) != null)
+        .map((a) => Addon(
+              title: a['title']!.text.trim(),
+              price: int.parse(a['price']!.text.trim()),
+            ))
+        .toList();
+
+    // Build additional info fields
+    final additionalInfo = additionalFields
+        .where((f) => f.fieldNameController.text.trim().isNotEmpty)
+        .map((f) => AdditionalInfo(
+              fieldName: f.fieldNameController.text.trim(),
+              mandatory: f.mandatory,
+              numbersOnly: f.numbersOnly,
+              lettersAndSigns: f.lettersSigns,
+              boolean: f.boolean,
+              limitLength: f.limitLength
+                  ? int.tryParse(f.maxLengthController.text) ?? 1
+                  : 0,
+            ))
+        .toList();
+
+    final request = CreateTicketRequest(
+      eventId: widget.eventId,
+      venueId: widget.venueId,
+      slotId: widget.slotId,
+      ticketName: ticketNameController.text.trim(),
+      freeTicket: freeTicket,
+      totalTickets: totalTickets,
+      ticketPrice: price.toInt(),
+      maxPersonsEnabled: maxPersonsToggle,
+      maxPersonsPerTicket: int.tryParse(maxPersonsController.text) ?? 1,
+      eventCapacity: widget.capacity,
+      ageRestriction: _selectedAgeRestriction,
+      maleAllocation: maleCount,
+      femaleAllocation: femaleCount,
+      otherAllocation: otherCount,
+      description: descriptionController.text.trim(),
+      dynamicPricingEnabled: dynamicPricing,
+      dynamicThreshold: int.tryParse(belowThresholdController.text) ?? 10,
+      dynamicIncreasePercentage: int.tryParse(increaseByController.text) ?? 5,
+      advancePaymentEnabled: advancePayment,
+      advancePercentage: advancePayment
+          ? int.tryParse(advancePercentController.text)
+          : null,
+      availabilityStart: eventStartController.text.trim(),
+      availabilityEnd: eventEndController.text.trim(),
+      minTickets: int.tryParse(minTicketsController.text) ?? 1,
+      maxTickets: int.tryParse(maxTicketsController.text) ?? 200,
+      guestListEnabled: guestList.isNotEmpty,
+      guestList: guestList,
+      addons: addons,
+      additionalInfoEnabled: additionalInfo.isNotEmpty,
+      additionalInfo: additionalInfo,
+      isActive: ticketActive,
+    );
+
+    try {
+      final response = await _ticketService.createTicket(request);
+      if (!mounted) return;
+
+      if (response.success) {
+        // Create TicketTier object to return
+        final ticket = TicketTier(
+          id: response.data.ticketId.toString(),
+          name: response.data.ticketName,
+          totalTickets: response.data.totalTickets,
+          price: response.data.ticketPrice.toDouble(),
+          maxPerPerson: request.maxPersonsPerTicket,
+          isActive: ticketActive,
+          isFree: freeTicket,
+          isDynamicPricing: dynamicPricing,
+          ageRestriction: _selectedAgeRestriction,
+          minTickets: request.minTickets,
+          maxTickets: request.maxTickets,
+        );
+        Navigator.pop(context, ticket);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: ${response.message}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -1381,7 +1538,7 @@ class _CreateTicketBottomSheetState extends State<CreateTicketBottomSheet> {
     );
   }
 
-  // ---------- Bottom Buttons ----------
+  // ---------- Bottom Buttons (with API integration) ----------
   Widget _buildBottomButtons(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -1392,7 +1549,7 @@ class _CreateTicketBottomSheetState extends State<CreateTicketBottomSheet> {
             child: SizedBox(
               height: 50,
               child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: _isLoading ? null : () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
                   backgroundColor: AppColors.kWhite,
                   side: const BorderSide(color: AppColors.kRed, width: 1.4),
@@ -1414,25 +1571,7 @@ class _CreateTicketBottomSheetState extends State<CreateTicketBottomSheet> {
             child: SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  // Return the created ticket data
-                  final ticket = TicketTier(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: ticketNameController.text.isNotEmpty
-                        ? ticketNameController.text
-                        : 'VIP PASS',
-                    totalTickets: int.tryParse(totalTicketsController.text) ?? 1,
-                    price: double.tryParse(ticketPriceController.text) ?? 0,
-                    maxPerPerson: int.tryParse(maxPersonsController.text) ?? 1,
-                    isActive: ticketActive,
-                    isFree: freeTicket,
-                    isDynamicPricing: dynamicPricing,
-                    ageRestriction: _selectedAgeRestriction,
-                    minTickets: int.tryParse(minTicketsController.text),
-                    maxTickets: int.tryParse(maxTicketsController.text),
-                  );
-                  Navigator.pop(context, ticket);
-                },
+                onPressed: _isLoading ? null : _submitTicket,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,
                   foregroundColor: AppColors.kWhite,
@@ -1440,13 +1579,22 @@ class _CreateTicketBottomSheetState extends State<CreateTicketBottomSheet> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text(
-                  'Submit',
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.kWhite),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: AppColors.kWhite,
+                        ),
+                      )
+                    : const Text(
+                        'Submit',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.kWhite),
+                      ),
               ),
             ),
           ),

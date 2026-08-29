@@ -1,107 +1,97 @@
+import 'package:fizma/Screens/add_event/add_venue_slot.dart';
 import 'package:fizma/Screens/add_event/event_publish.dart';
+import 'package:fizma/Screens/navbar/navbar.dart';
+import 'package:fizma/models_n_services/add_event/add_event_model.dart';
+import 'package:fizma/models_n_services/add_event/add_event_svc.dart';
+import 'package:fizma/models_n_services/assign_volunteers/assign_volunteers_model.dart';
+import 'package:fizma/models_n_services/assign_volunteers/assign_volunteers_svc.dart';
+import 'package:fizma/models_n_services/event_volunteers/volunteers_list.dart';
+import 'package:fizma/models_n_services/event_volunteers/volunteers_list_svc.dart';
+import 'package:fizma/models_n_services/publish_event/publish_event_model.dart';
+import 'package:fizma/models_n_services/publish_event/publish_event_svc.dart';
+import 'package:fizma/utils/app_preference.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-// ---------- Data Model for Volunteer ----------
-class VolunteerItem {
-  final String id;
-  final String name;
-  final String initials;
-  final String role;
-  final int eventsCount;
-  final bool isActive;
-  final Color avatarBgColor;
-
-  VolunteerItem({
-    required this.id,
-    required this.name,
-    required this.initials,
-    required this.role,
-    required this.eventsCount,
-    required this.isActive,
-    required this.avatarBgColor,
-  });
-}
-
 class AssignVolunteersScreen extends StatefulWidget {
-  const AssignVolunteersScreen({super.key});
+  final int eventId;
+  final int organiserId;
+  final List<VenueWithSlots> venues;
+
+  const AssignVolunteersScreen({
+    super.key,
+    required this.eventId,
+    required this.organiserId,
+    required this.venues,
+  });
 
   @override
   State<AssignVolunteersScreen> createState() => _AssignVolunteersScreenState();
 }
 
 class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
-  // Mock Volunteers List
-  final List<VolunteerItem> _volunteers = [
-    VolunteerItem(
-      id: '1',
-      name: 'Aisha Mensah',
-      initials: 'AM',
-      role: 'Ticket Scanner',
-      eventsCount: 14,
-      isActive: true,
-      avatarBgColor: const Color(0xFFE53935),
-    ),
-    VolunteerItem(
-      id: '2',
-      name: 'Carlos Rivera',
-      initials: 'CR',
-      role: 'Entry Manager',
-      eventsCount: 9,
-      isActive: true,
-      avatarBgColor: const Color(0xFFFB8C00),
-    ),
-    VolunteerItem(
-      id: '3',
-      name: 'Priya Nair',
-      initials: 'PN',
-      role: 'VIP Coordinator',
-      eventsCount: 22,
-      isActive: true,
-      avatarBgColor: const Color(0xFF00BFA5),
-    ),
-    VolunteerItem(
-      id: '4',
-      name: 'James Okonkwo',
-      initials: 'JO',
-      role: 'Ticket Scanner',
-      eventsCount: 6,
-      isActive: false,
-      avatarBgColor: const Color(0xFF29B6F6),
-    ),
-    VolunteerItem(
-      id: '5',
-      name: 'Elena Vasquez',
-      initials: 'EV',
-      role: 'Floor Manager',
-      eventsCount: 17,
-      isActive: true,
-      avatarBgColor: const Color(0xFF7E57C2),
-    ),
-    VolunteerItem(
-      id: '6',
-      name: 'Raj Patel',
-      initials: 'RP',
-      role: 'Ticket Scanner',
-      eventsCount: 3,
-      isActive: true,
-      avatarBgColor: const Color(0xFFEC407A),
-    ),
-    VolunteerItem(
-      id: '7',
-      name: 'Sophie Chen',
-      initials: 'SC',
-      role: 'Entry Manager',
-      eventsCount: 11,
-      isActive: false,
-      avatarBgColor: const Color(0xFF26A69A),
-    ),
-  ];
+  final VolunteerService _volunteerService = VolunteerService();
+  final AssignVolunteerService _assignService = AssignVolunteerService();
+  final PublishEventService _publishService = PublishEventService();
+  final EventService _eventService = EventService(); // for saving draft
 
-  // Track selected volunteer IDs
-  final Set<String> _selectedVolunteerIds = {};
+  List<Volunteer> _volunteers = [];
+  bool _isLoading = false;
+  bool _isAssigning = false;
+  bool _isPublishing = false;
+  bool _isSavingDraft = false;
+  String _errorMessage = '';
 
-  void _toggleSelection(String id) {
+  // Selected but not yet assigned
+  final Set<int> _selectedVolunteerIds = {};
+  // Already assigned (persistent)
+  final Set<int> _assignedVolunteerIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchVolunteers();
+  }
+
+  // ---------- Helpers ----------
+  String _formatDateForApi(DateTime dt) =>
+      '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  String _formatTimeForApi(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _fetchVolunteers() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    try {
+      final response = await _volunteerService.getVolunteers(widget.organiserId);
+      if (!mounted) return;
+      setState(() {
+        _volunteers = response.data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
+      });
+    }
+  }
+
+  void _toggleSelection(int id) {
+    if (_assignedVolunteerIds.contains(id)) {
+      _showSnackBar('This volunteer is already assigned.');
+      return;
+    }
     setState(() {
       if (_selectedVolunteerIds.contains(id)) {
         _selectedVolunteerIds.remove(id);
@@ -111,8 +101,166 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
     });
   }
 
+  // ---------- Save as Draft (with current date/time) ----------
+  Future<void> _saveAsDraft() async {
+    setState(() => _isSavingDraft = true);
+
+    final organiserId = await AppPreferences.getOrganiserId() ?? widget.organiserId;
+
+    // ✅ Use current date/time to satisfy NOT NULL constraint
+    final now = DateTime.now();
+    final eventDate = _formatDateForApi(now);
+    final startTime = _formatTimeForApi(now);
+    final endTime = _formatTimeForApi(now.add(const Duration(hours: 1)));
+
+    final request = EventCreateRequest(
+      eventName: '',
+      eventCategory: '',
+      artists: [],
+      ageRestriction: '',
+      languages: [],
+      description: '',
+      tags: [],
+      termsConditions: '',
+      facilities: [],
+      status: 'draft',
+      promotionalVideoUrl: '',
+      organiserId: organiserId,
+      eventDate: eventDate,
+      startTime: startTime,
+      endTime: endTime,
+      step: 6,
+      eventId: widget.eventId,
+    );
+
+    try {
+      final response = await _eventService.createEvent(request);
+      if (!mounted) return;
+
+      _showSnackBar('Event saved as draft!');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const EventsNavBar(initialIndex: 1),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Failed to save draft: $e');
+    } finally {
+      if (mounted) setState(() => _isSavingDraft = false);
+    }
+  }
+
+  // ---------- Assign Volunteers ----------
+  Future<void> _assignVolunteers() async {
+    if (_selectedVolunteerIds.isEmpty) {
+      _showSnackBar('Please select at least one volunteer.');
+      return;
+    }
+
+    setState(() => _isAssigning = true);
+
+    final request = AssignVolunteerRequest(
+      eventId: widget.eventId,
+      step: 6,
+      volunteerIds: _selectedVolunteerIds.toList(),
+    );
+
+    try {
+      final response = await _assignService.assignVolunteers(request);
+      if (!mounted) return;
+
+      if (response.success) {
+        setState(() {
+          _assignedVolunteerIds.addAll(_selectedVolunteerIds);
+        });
+        _showSnackBar(response.message);
+      } else {
+        _showSnackBar('Failed: ${response.message}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Error: $e');
+    } finally {
+      if (mounted) setState(() => _isAssigning = false);
+    }
+  }
+
+  // ---------- Publish Event ----------
+  Future<void> _publishEvent() async {
+    setState(() => _isPublishing = true);
+
+    final request = PublishEventRequest(eventId: widget.eventId);
+
+    try {
+      final response = await _publishService.publishEvent(request);
+      if (!mounted) return;
+
+      if (response.success) {
+        _showSnackBar(response.message);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EventPublishedSuccessScreen(
+              eventData: response.event,
+            ),
+          ),
+        );
+      } else {
+        _showSnackBar('Failed: ${response.message}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Error: $e');
+    } finally {
+      if (mounted) setState(() => _isPublishing = false);
+    }
+  }
+
+  // ---------- UI Helpers ----------
+  Color _getAvatarColor(String name) {
+    final colors = [
+      const Color(0xFFE53935),
+      const Color(0xFFFB8C00),
+      const Color(0xFF00BFA5),
+      const Color(0xFF29B6F6),
+      const Color(0xFF7E57C2),
+      const Color(0xFFEC407A),
+      const Color(0xFF26A69A),
+    ];
+    final index = name.hashCode % colors.length;
+    return colors[index.abs()];
+  }
+
+  String _getInitials(String name) {
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return parts[0][0].toUpperCase() + parts[1][0].toUpperCase();
+    }
+    return name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.toUpperCase();
+  }
+
+  String _getRoleDisplay(String access) {
+    switch (access.toLowerCase()) {
+      case 'password':
+        return 'Ticket Scanner';
+      case 'admin':
+        return 'Admin';
+      case 'view':
+        return 'Viewer';
+      case 'scan':
+        return 'Scanner';
+      default:
+        return 'Volunteer';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final showSkip = _assignedVolunteerIds.isEmpty && _selectedVolunteerIds.isEmpty;
+    final hasSelection = _selectedVolunteerIds.isNotEmpty;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFDF7F7),
       body: SafeArea(
@@ -126,13 +274,10 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ---------- INFO NOTICE CARD ----------
                     _buildInfoNoticeCard(),
                     const SizedBox(height: 14),
-
-                    // ---------- SELECTION COUNTER TEXT ----------
                     Text(
-                      '${_selectedVolunteerIds.length} of ${_volunteers.length} volunteers assigned',
+                      '${_selectedVolunteerIds.length + _assignedVolunteerIds.length} of ${_volunteers.length} volunteers assigned',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -141,33 +286,80 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    // ---------- VOLUNTEERS LIST ----------
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _volunteers.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final item = _volunteers[index];
-                        final isSelected = _selectedVolunteerIds.contains(item.id);
-                        return _buildVolunteerCard(item, isSelected);
-                      },
-                    ),
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_errorMessage.isNotEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.error_outline, color: AppColors.kRed, size: 40),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Failed to load volunteers',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _errorMessage,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _fetchVolunteers,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.kRed,
+                                  foregroundColor: AppColors.kWhite,
+                                ),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (_volunteers.isEmpty)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Text(
+                            'No volunteers available for this organiser.',
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _volunteers.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final item = _volunteers[index];
+                          final isSelected = _selectedVolunteerIds.contains(item.id);
+                          final isAssigned = _assignedVolunteerIds.contains(item.id);
+                          return _buildVolunteerCard(item, isSelected, isAssigned);
+                        },
+                      ),
                     const SizedBox(height: 16),
                   ],
                 ),
               ),
             ),
-
-            // ---------- BOTTOM ACTION BUTTONS ----------
-            _buildBottomButtons(context),
+            _buildBottomButtons(hasSelection, showSkip),
           ],
         ),
       ),
     );
   }
 
-  // ---------- Header Top Bar ----------
+  // ---------- Header Top Bar (with Save as Draft) ----------
   Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -188,13 +380,43 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
               color: AppColors.kTextDark,
             ),
           ),
-          const SizedBox(width: 18),
+          GestureDetector(
+            onTap: _isSavingDraft ? null : _saveAsDraft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: _isSavingDraft ? Colors.grey.shade300 : AppColors.kChipBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _isSavingDraft ? Colors.grey.shade400 : AppColors.kRed,
+                  width: 1.2,
+                ),
+              ),
+              child: _isSavingDraft
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: Colors.grey,
+                      ),
+                    )
+                  : const Text(
+                      'Save as Draft',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.kRed,
+                      ),
+                    ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // ---------- Step Progress Bar (Step 6 of 6) ----------
+  // ---------- Step Progress Bar ----------
   Widget _buildProgressBar() {
     return Column(
       children: [
@@ -236,7 +458,7 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
     );
   }
 
-  // ---------- Yellow Notice Card ----------
+  // ---------- Info Notice Card ----------
   Widget _buildInfoNoticeCard() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -286,18 +508,23 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
     );
   }
 
-  // ---------- Volunteer Card Item ----------
-  Widget _buildVolunteerCard(VolunteerItem item, bool isSelected) {
+  // ---------- Volunteer Card ----------
+  Widget _buildVolunteerCard(Volunteer item, bool isSelected, bool isAssigned) {
+    final initials = _getInitials(item.volunteerName);
+    final avatarColor = _getAvatarColor(item.volunteerName);
+    final isActive = item.isActive == 1;
+    final role = _getRoleDisplay(item.access);
+
     return GestureDetector(
-      onTap: () => _toggleSelection(item.id),
+      onTap: isAssigned ? null : () => _toggleSelection(item.id),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.kRed : const Color(0xFFF0F0F0),
-            width: isSelected ? 1.5 : 1,
+            color: isSelected || isAssigned ? AppColors.kRed : const Color(0xFFF0F0F0),
+            width: isSelected || isAssigned ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
@@ -309,12 +536,11 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
         ),
         child: Row(
           children: [
-            // Circular Avatar with Initials
             CircleAvatar(
               radius: 22,
-              backgroundColor: item.avatarBgColor,
+              backgroundColor: avatarColor,
               child: Text(
-                item.initials,
+                initials,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
@@ -323,14 +549,12 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
               ),
             ),
             const SizedBox(width: 12),
-
-            // Volunteer Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item.name,
+                    item.volunteerName,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -339,47 +563,65 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${item.role} · ${item.eventsCount} events',
+                    '$role · ${item.viewTickets + item.scanTickets} events',
                     style: const TextStyle(
                       fontSize: 11.5,
                       color: Color(0xFF8E8E93),
                     ),
                   ),
                   const SizedBox(height: 4),
-
-                  // Active / Inactive Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: item.isActive ? const Color(0xFFE8F8F0) : const Color(0xFFF2F2F7),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      item.isActive ? 'Active' : 'Inactive',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: item.isActive ? const Color(0xFF00A86B) : const Color(0xFF8E8E93),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isActive ? const Color(0xFFE8F8F0) : const Color(0xFFF2F2F7),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          isActive ? 'Active' : 'Inactive',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isActive ? const Color(0xFF00A86B) : const Color(0xFF8E8E93),
+                          ),
+                        ),
                       ),
-                    ),
+                      if (isAssigned) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE3F2FD),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'Assigned',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1565C0),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
             ),
-
-            // Custom Checkbox Circle
             Container(
               width: 22,
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected ? AppColors.kRed : Colors.transparent,
+                color: (isSelected || isAssigned) ? AppColors.kRed : Colors.transparent,
                 border: Border.all(
-                  color: isSelected ? AppColors.kRed : const Color(0xFFD1D1D6),
+                  color: (isSelected || isAssigned) ? AppColors.kRed : const Color(0xFFD1D1D6),
                   width: 1.5,
                 ),
               ),
-              child: isSelected
+              child: (isSelected || isAssigned)
                   ? const Icon(Icons.check, size: 14, color: Colors.white)
                   : null,
             ),
@@ -389,71 +631,117 @@ class _AssignVolunteersScreenState extends State<AssignVolunteersScreen> {
     );
   }
 
-  // ---------- Bottom Stacked Action Buttons ----------
-  Widget _buildBottomButtons(BuildContext context) {
+  // ---------- Bottom Action Buttons ----------
+  Widget _buildBottomButtons(bool hasSelection, bool showSkip) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Skip & Publish Button
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: OutlinedButton(
-              onPressed: () {
-                // Handle Publish without Volunteers
-              },
-              style: OutlinedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFEAEA),
-                side: BorderSide.none,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: const Text(
-                'Skip & Publish without Volunteers',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.kRed,
+          if (showSkip) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: OutlinedButton(
+                onPressed: _isPublishing ? null : _publishEvent,
+                style: OutlinedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFEAEA),
+                  side: BorderSide.none,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
+                child: _isPublishing
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: AppColors.kRed,
+                        ),
+                      )
+                    : const Text(
+                        'Skip & Publish without Volunteers',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.kRed,
+                        ),
+                      ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-
-          // Main Publish Event Button
+            const SizedBox(height: 10),
+          ],
+          if (hasSelection) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton(
+                onPressed: _isAssigning ? null : _assignVolunteers,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.kRed,
+                  foregroundColor: AppColors.kWhite,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: _isAssigning
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: AppColors.kWhite,
+                        ),
+                      )
+                    : const Text(
+                        'Assign Volunteers',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           SizedBox(
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const EventPublishedSuccessScreen(),
-                  ),
-                );
-              },
+              onPressed: _isPublishing ? null : _publishEvent,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.kRed,
                 foregroundColor: AppColors.kWhite,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Text(
-                    'Publish Event',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+              child: _isPublishing
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.4,
+                        color: AppColors.kWhite,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Text(
+                          'Publish Event',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Icon(Icons.rocket_launch_rounded, size: 16),
+                      ],
                     ),
-                  ),
-                  SizedBox(width: 6),
-                  Icon(Icons.rocket_launch_rounded, size: 16),
-                ],
-              ),
             ),
           ),
         ],

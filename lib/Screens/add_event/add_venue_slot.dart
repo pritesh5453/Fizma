@@ -4,7 +4,7 @@ import 'package:fizma/Screens/add_event/add_venue_slot.dart' hide EventSlot, Ven
 import 'package:fizma/Screens/add_event/create_table_screen.dart';
 import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
 import 'package:fizma/Screens/add_event/create_ticket_n_tables_screen.dart' hide VenueOption;
-import 'package:fizma/Screens/add_event/event_slot.dart' hide EventSlot;   // ✅ brings EventSlot & AddEventSlotSheet
+import 'package:fizma/Screens/add_event/event_slot.dart' hide EventSlot;
 import 'package:fizma/models_n_services/event_slot/event_slot_svc.dart';
 import 'package:fizma/models_n_services/event_venue/event_venue_model.dart';
 import 'package:fizma/models_n_services/event_venue/event_venue_svc.dart';
@@ -18,7 +18,7 @@ class VenueWithSlots {
   final int capacity;
   final int safetyCap;
   final int? bufferCapacity;
-  final List<EventSlot> slots;   // uses EventSlot from event_slot.dart
+  final List<EventSlot> slots;
 
   VenueWithSlots({
     required this.venue,
@@ -30,10 +30,12 @@ class VenueWithSlots {
 }
 
 class AddEventSlotScreen extends StatefulWidget {
+  final int organiserId;
   final int eventId;
 
   const AddEventSlotScreen({
     super.key,
+    required this.organiserId,
     required this.eventId,
   });
 
@@ -53,7 +55,7 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddEventSlotSheet(   // ✅ now defined
+      builder: (context) => AddEventSlotSheet(
         eventId: widget.eventId,
         venueId: venueData.venue.id,
         venueName: venueData.venue.name,
@@ -89,7 +91,6 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
         return;
       }
 
-      // Use venueId (actual venue ID)
       final venueOptions = response.venues.map((venue) {
         return VenueOption(
           id: venue.venueId,
@@ -140,7 +141,6 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
       return;
     }
 
-    // Validate registration deadline
     for (var slot in allSlots) {
       if (slot.registrationDeadline.isAfter(slot.fromDate)) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -183,6 +183,33 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
       if (!mounted) return;
 
       if (response.success) {
+        final serverSlots = response.data;
+        int serverIndex = 0;
+        for (var venue in venueList) {
+          for (int i = 0; i < venue.slots.length; i++) {
+            if (serverIndex < serverSlots.length) {
+              final serverSlot = serverSlots[serverIndex];
+              final localSlot = venue.slots[i];
+              final updatedSlot = EventSlot(
+                id: serverSlot.id,
+                title: localSlot.title,
+                fromDate: localSlot.fromDate,
+                toDate: localSlot.toDate,
+                registrationDeadline: localSlot.registrationDeadline,
+                allDay: localSlot.allDay,
+                startTime: localSlot.startTime,
+                endTime: localSlot.endTime,
+                repeatWeekly: localSlot.repeatWeekly,
+                repeatDays: localSlot.repeatDays,
+                capacity: localSlot.capacity,
+                venueId: localSlot.venueId,
+              );
+              venue.slots[i] = updatedSlot;
+              serverIndex++;
+            }
+          }
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response.message)),
         );
@@ -190,7 +217,9 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => CreateTicketsScreen(
-           
+              eventId: widget.eventId,
+              organiserId: widget.organiserId,
+              venuesWithSlots: venueList,
             ),
           ),
         );
@@ -527,52 +556,6 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
               ],
             ),
           const SizedBox(height: 12),
-
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CreateTicketBottomSheet(
-                         
-                          capacity: venueCapacity,
-                        ),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.kRed, width: 1),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Create Ticket', style: TextStyle(fontSize: 12, color: AppColors.kRed)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CreateTableBottomSheet(
-                          
-                          capacity: venueCapacity,
-                        ),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.kRed, width: 1),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Create Table', style: TextStyle(fontSize: 12, color: AppColors.kRed)),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );
@@ -599,7 +582,9 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => CreateTicketsScreen(
-                           
+                            eventId: widget.eventId,
+                            organiserId: widget.organiserId,
+                            venuesWithSlots: venueList,
                           ),
                         ),
                       );

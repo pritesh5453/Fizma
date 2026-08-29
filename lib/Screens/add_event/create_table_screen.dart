@@ -37,14 +37,14 @@ Future<TableTier?> showCreateTableBottomSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => CreateTableBottomSheet(capacity: capacity),
+    builder: (context) => CreateTableBottomSheet(capacity: capacity, eventId: 1,),  // event ID Dummy
   );
 }
 
 // ---------- Bottom Sheet Widget ----------
 class CreateTableBottomSheet extends StatefulWidget {
   final int capacity;
-  const CreateTableBottomSheet({super.key, required this.capacity});
+  const CreateTableBottomSheet({super.key, required this.capacity, required int eventId});
 
   @override
   State<CreateTableBottomSheet> createState() => _CreateTableBottomSheetState();

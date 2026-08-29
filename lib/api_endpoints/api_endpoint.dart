@@ -14,4 +14,14 @@ class ApiEndpoints {
       '$baseUrl/api/Event/venue/event/$eventId';
 
       static const String addEventSlots = '$baseUrl/api/Event/add-event-slot';
+
+      static const String createTicket = '/api/Event/create-ticket';
+
+      static String getVolunteers(int organiserId) =>
+      '/api/volunteer/organiser/$organiserId';
+
+      static const String assignVolunteers = '/api/volunteer/assign-volunteers';
+
+        // ✅ Publish Event
+      static const String publishEvent = '/api/Event/publish-event';
 }

@@ -305,6 +305,7 @@ class _AddVenueScreenState extends State<AddVenueScreen> {
           MaterialPageRoute(
             builder: (context) => AddEventSlotScreen(
               eventId: int.tryParse(widget.eventId) ?? 0,
+              organiserId: widget.organiserId,
             ),
           ),
         );

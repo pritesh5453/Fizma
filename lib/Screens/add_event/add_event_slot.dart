@@ -1,12 +1,11 @@
 // lib/Screens/add_event/event_slot.dart
 
-import 'package:fizma/Screens/add_event/add_volunteer/add_voluteer.dart';
-import 'package:fizma/Screens/add_event/add_volunteer/voluteer_list_screen.dart';
 import 'package:fizma/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 // ---------- ENHANCED EVENT SLOT MODEL ----------
 class EventSlot {
+  final int? id;               // server-assigned ID (nullable for local slots)
   final String title;
   final DateTime fromDate;
   final DateTime toDate;
@@ -20,6 +19,7 @@ class EventSlot {
   final int venueId;
 
   EventSlot({
+    this.id,
     required this.title,
     required this.fromDate,
     required this.toDate,
@@ -251,49 +251,49 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // ---------- Header (without Add Volunteer button) ----------
             Row(
               children: [
                 const Expanded(
-                  child: Text('Add Slot',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AssignVolunteersScreen())),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.kWhite,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.kRed, width: 1.2),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.add, size: 14, color: AppColors.kRed),
-                        SizedBox(width: 4),
-                        Text('Add Volunteer', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kRed)),
-                      ],
+                  child: Text(
+                    'Add Slot',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.kTextDark,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
                 InkWell(
                   onTap: () => Navigator.pop(context),
                   borderRadius: BorderRadius.circular(20),
                   child: Container(
-                    width: 30, height: 30,
-                    decoration: const BoxDecoration(color: AppColors.kChipBg, shape: BoxShape.circle),
-                    child: const Icon(Icons.close, size: 16, color: AppColors.kRed),
+                    width: 30,
+                    height: 30,
+                    decoration: const BoxDecoration(
+                      color: AppColors.kChipBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: AppColors.kRed,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 14),
 
-            // Slot Title
-            const Text('Slot Title', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.kTextDark)),
+            // ---------- Slot Title ----------
+            const Text(
+              'Slot Title',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.kTextDark,
+              ),
+            ),
             const SizedBox(height: 6),
             Container(
               height: 46,
@@ -315,7 +315,7 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
             ),
             const SizedBox(height: 14),
 
-            // Venue context card
+            // ---------- Venue context card ----------
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -326,21 +326,46 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.location_on, color: AppColors.kRed, size: 18),
+                  const Icon(
+                    Icons.location_on,
+                    color: AppColors.kRed,
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.venueName, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.kTextDark)),
-                      Text(widget.venueCity, style: TextStyle(fontSize: 11.5, color: AppColors.kTextDark.withOpacity(0.55))),
+                      Text(
+                        widget.venueName,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.kTextDark,
+                        ),
+                      ),
+                      Text(
+                        widget.venueCity,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.kTextDark.withOpacity(0.55),
+                        ),
+                      ),
                     ],
                   ),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: AppColors.kChipBg, borderRadius: BorderRadius.circular(12)),
-                    child: Text('Cap. ${widget.venueCapacity}',
-                      style: TextStyle(fontSize: 11, color: AppColors.kTextDark.withOpacity(0.6), fontWeight: FontWeight.w600),
+                    decoration: BoxDecoration(
+                      color: AppColors.kChipBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Cap. ${widget.venueCapacity}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.kTextDark.withOpacity(0.6),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -348,7 +373,7 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
             ),
             const SizedBox(height: 14),
 
-            // Schedule card
+            // ---------- Schedule card ----------
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(14),
@@ -360,7 +385,14 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Venue Schedule', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.kTextDark)),
+                  const Text(
+                    'Venue Schedule',
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.kTextDark,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   _buildDatePicker('From Date', selectedStartDate, _pickStartDate),
                   const SizedBox(height: 12),
@@ -369,20 +401,35 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                   _buildDatePicker('Registration Deadline', selectedRegistrationDeadline, _pickRegistrationDeadline),
                   const SizedBox(height: 16),
 
-                  // Time row
+                  // ---------- Time row with All Day toggle ----------
                   Row(
                     children: [
-                      const Text('Time Details', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.kTextDark)),
+                      const Text(
+                        'Time Details',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.kTextDark,
+                        ),
+                      ),
                       const Spacer(),
                       Row(
                         children: [
-                          const Text('All Day', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.kTextDark)),
+                          const Text(
+                            'All Day',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.kTextDark,
+                            ),
+                          ),
                           const SizedBox(width: 4),
                           Switch(
                             value: allDay,
                             onChanged: _toggleAllDay,
                             activeColor: AppColors.kRed,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                           ),
                         ],
                       ),
@@ -393,21 +440,38 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(color: const Color(0xFFE1F8EA), borderRadius: BorderRadius.circular(20)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE1F8EA),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.access_time, size: 12, color: Color(0xFF22C55E)),
+                            const Icon(
+                              Icons.access_time,
+                              size: 12,
+                              color: Color(0xFF22C55E),
+                            ),
                             const SizedBox(width: 4),
-                            Text(_durationLabel, style: const TextStyle(fontSize: 11, color: Color(0xFF22C55E), fontWeight: FontWeight.w600)),
+                            Text(
+                              _durationLabel,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF22C55E),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     ),
                   const SizedBox(height: 12),
 
-                  // Time pickers
+                  // ---------- Time pickers ----------
                   Row(
                     children: [
                       Expanded(
@@ -417,7 +481,8 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                           minute: startMinute,
                           isAM: startIsAM,
                           onHourChanged: (h) => setState(() => startHour = h),
-                          onMinuteChanged: (m) => setState(() => startMinute = m),
+                          onMinuteChanged: (m) =>
+                              setState(() => startMinute = m),
                           onAmPmChanged: (am) => setState(() => startIsAM = am),
                           enabled: !allDay,
                         ),
@@ -439,13 +504,24 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Repeat weekly
+                  // ---------- Repeat week ----------
                   Row(
                     children: [
-                      const Icon(Icons.event_repeat, size: 16, color: AppColors.kRed),
+                      const Icon(
+                        Icons.event_repeat,
+                        size: 16,
+                        color: AppColors.kRed,
+                      ),
                       const SizedBox(width: 6),
                       const Expanded(
-                        child: Text('Repeat every week on:', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.kTextDark)),
+                        child: Text(
+                          'Repeat every week on:',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.kTextDark,
+                          ),
+                        ),
                       ),
                       Switch(
                         value: repeatWeekly,
@@ -462,8 +538,11 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                       return InkWell(
                         onTap: repeatWeekly
                             ? () => setState(() {
-                                if (selected) repeatDays.remove(index);
-                                else repeatDays.add(index);
+                                if (selected) {
+                                  repeatDays.remove(index);
+                                } else {
+                                  repeatDays.add(index);
+                                }
                               })
                             : null,
                         borderRadius: BorderRadius.circular(20),
@@ -474,14 +553,21 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                           decoration: BoxDecoration(
                             color: selected ? AppColors.kRed : AppColors.kWhite,
                             shape: BoxShape.circle,
-                            border: Border.all(color: selected ? AppColors.kRed : AppColors.kBorder, width: 1.2),
+                            border: Border.all(
+                              color: selected
+                                  ? AppColors.kRed
+                                  : AppColors.kBorder,
+                              width: 1.2,
+                            ),
                           ),
                           child: Text(
                             _dayLabels[index],
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: selected ? AppColors.kWhite : AppColors.kTextDark.withOpacity(0.6),
+                              color: selected
+                                  ? AppColors.kWhite
+                                  : AppColors.kTextDark.withOpacity(0.6),
                             ),
                           ),
                         ),
@@ -493,7 +579,7 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
             ),
             const SizedBox(height: 16),
 
-            // Save button
+            // ---------- Save button ----------
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -503,9 +589,18 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
                   backgroundColor: AppColors.kRed,
                   foregroundColor: AppColors.kWhite,
                   elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Save Slot', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.kWhite)),
+                child: const Text(
+                  'Save Slot',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.kWhite,
+                  ),
+                ),
               ),
             ),
           ],
@@ -514,11 +609,19 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
     );
   }
 
+  // ---------- Date picker widget ----------
   Widget _buildDatePicker(String label, DateTime value, VoidCallback onTap) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11.5, color: AppColors.kHint, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11.5,
+            color: AppColors.kHint,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 6),
         InkWell(
           onTap: onTap,
@@ -529,14 +632,33 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
             decoration: BoxDecoration(
               color: AppColors.kWhite,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.kBorder, width: 1.2),
+              border: Border.all(
+                color: AppColors.kBorder,
+                width: 1.2,
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.calendar_today, size: 15, color: AppColors.kRed),
+                const Icon(
+                  Icons.calendar_today,
+                  size: 15,
+                  color: AppColors.kRed,
+                ),
                 const SizedBox(width: 8),
-                Expanded(child: Text(_formatDate(value), style: const TextStyle(fontSize: 13, color: AppColors.kTextDark))),
-                const Icon(Icons.calendar_month_outlined, size: 16, color: AppColors.kHint),
+                Expanded(
+                  child: Text(
+                    _formatDate(value),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.kTextDark,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.calendar_month_outlined,
+                  size: 16,
+                  color: AppColors.kHint,
+                ),
               ],
             ),
           ),
@@ -545,6 +667,7 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
     );
   }
 
+  // ---------- Time picker widget ----------
   Widget _timePicker({
     required String label,
     required int hour,
@@ -558,7 +681,14 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 10.5, color: AppColors.kHint, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10.5,
+            color: AppColors.kHint,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -572,10 +702,20 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
               Expanded(
                 child: Text(
                   '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: enabled ? AppColors.kTextDark : AppColors.kTextDark.withOpacity(0.4)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: enabled
+                        ? AppColors.kTextDark
+                        : AppColors.kTextDark.withOpacity(0.4),
+                  ),
                 ),
               ),
-              _amPmToggle(isAM: isAM, onChanged: onAmPmChanged, enabled: enabled),
+              _amPmToggle(
+                isAM: isAM,
+                onChanged: onAmPmChanged,
+                enabled: enabled,
+              ),
             ],
           ),
         ),
@@ -590,18 +730,30 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
   }) {
     return Container(
       padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(color: AppColors.kPinkLight, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: AppColors.kPinkLight,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _amPmButton('AM', isAM, () { if (enabled) onChanged(true); }, enabled: enabled),
-          _amPmButton('PM', !isAM, () { if (enabled) onChanged(false); }, enabled: enabled),
+          _amPmButton('AM', isAM, () {
+            if (enabled) onChanged(true);
+          }, enabled: enabled),
+          _amPmButton('PM', !isAM, () {
+            if (enabled) onChanged(false);
+          }, enabled: enabled),
         ],
       ),
     );
   }
 
-  Widget _amPmButton(String label, bool selected, VoidCallback onTap, {bool enabled = true}) {
+  Widget _amPmButton(
+    String label,
+    bool selected,
+    VoidCallback onTap, {
+    bool enabled = true,
+  }) {
     return InkWell(
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(6),
@@ -616,7 +768,11 @@ class _AddEventSlotSheetState extends State<AddEventSlotSheet> {
           style: TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w700,
-            color: selected ? AppColors.kWhite : (enabled ? AppColors.kTextDark.withOpacity(0.5) : AppColors.kTextDark.withOpacity(0.2)),
+            color: selected
+                ? AppColors.kWhite
+                : enabled
+                ? AppColors.kTextDark.withOpacity(0.5)
+                : AppColors.kTextDark.withOpacity(0.2),
           ),
         ),
       ),
