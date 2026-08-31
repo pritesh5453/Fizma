@@ -1,4 +1,4 @@
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 /// A single "Quick Actions" tile (New Event / Payment / Reports).

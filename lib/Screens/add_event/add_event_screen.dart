@@ -1,12 +1,12 @@
 import 'dart:io';
-import 'package:fizma/Screens/navbar/navbar.dart';
-import 'package:fizma/models_n_services/add_event/add_event_svc.dart';
-import 'package:fizma/utils/app_preference.dart';
+import 'package:fizmaa/Screens/navbar/navbar.dart';
+import 'package:fizmaa/models_n_services/add_event/add_event_svc.dart';
+import 'package:fizmaa/utils/app_preference.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:fizma/Screens/add_event/media_upload.dart';
-import 'package:fizma/utils/appcolors.dart';
-import 'package:fizma/models_n_services/add_event/add_event_model.dart';
+import 'package:fizmaa/Screens/add_event/media_upload.dart';
+import 'package:fizmaa/utils/appcolors.dart';
+import 'package:fizmaa/models_n_services/add_event/add_event_model.dart';
 
 class _ArtistData {
   final String name;

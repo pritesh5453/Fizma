@@ -1,6 +1,6 @@
-// import 'package:fizma/Screens/Auth/signup_screen.dart';
-// import 'package:fizma/Screens/home/homescreen.dart';
-// import 'package:fizma/Screens/navbar/navbar.dart';
+// import 'package:fizmaa/Screens/Auth/signup_screen.dart';
+// import 'package:fizmaa/Screens/home/homescreen.dart';
+// import 'package:fizmaa/Screens/navbar/navbar.dart';
 // import 'package:flutter/material.dart';
 // import 'package:flutter/scheduler.dart';
 

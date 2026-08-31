@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:fizma/api_endpoints/api_endpoint.dart';
-import 'package:fizma/api_endpoints/dio_client.dart';
-import 'package:fizma/models_n_services/create_ticket_model.dart/create_ticket_model.dart';
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/api_endpoints/dio_client.dart';
+import 'package:fizmaa/models_n_services/create_ticket_model.dart/create_ticket_model.dart';
 
 class CreateTicketService {
   final Dio _dio = DioClient.instance;

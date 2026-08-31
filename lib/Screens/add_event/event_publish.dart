@@ -1,7 +1,7 @@
-import 'package:fizma/Screens/add_event/add_event_screen.dart';
-import 'package:fizma/Screens/navbar/navbar.dart';
-import 'package:fizma/models_n_services/publish_event/publish_event_model.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/add_event/add_event_screen.dart';
+import 'package:fizmaa/Screens/navbar/navbar.dart';
+import 'package:fizmaa/models_n_services/publish_event/publish_event_model.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class EventPublishedSuccessScreen extends StatefulWidget {

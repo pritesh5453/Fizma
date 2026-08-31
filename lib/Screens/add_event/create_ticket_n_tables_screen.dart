@@ -1,10 +1,10 @@
-import 'package:fizma/Screens/add_event/add_venue_slot.dart' hide VenueOption;
-import 'package:fizma/Screens/add_event/add_volunteer/voluteer_list_screen.dart';
-import 'package:fizma/Screens/add_event/create_table_screen.dart';
-import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
-import 'package:fizma/Screens/add_event/event_slot.dart';
-import 'package:fizma/models_n_services/venue_list/venue_list_model.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/add_event/add_venue_slot.dart' hide VenueOption;
+import 'package:fizmaa/Screens/add_event/add_volunteer/voluteer_list_screen.dart';
+import 'package:fizmaa/Screens/add_event/create_table_screen.dart';
+import 'package:fizmaa/Screens/add_event/create_ticket/create_ticket.dart';
+import 'package:fizmaa/Screens/add_event/event_slot.dart';
+import 'package:fizmaa/models_n_services/venue_list/venue_list_model.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class CreateTicketsScreen extends StatefulWidget {

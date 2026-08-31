@@ -1,11 +1,11 @@
 // lib/Screens/Auth/login_screen.dart
 
-import 'package:fizma/Screens/Auth/otp_screen.dart';
-import 'package:fizma/Screens/Auth/signup_screen.dart';
-import 'package:fizma/Screens/onboarding/fizma_logo.dart';
-import 'package:fizma/models_n_services/login/login_svc.dart';
-import 'package:fizma/utils/app_preference.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/Auth/otp_screen.dart';
+import 'package:fizmaa/Screens/Auth/signup_screen.dart';
+import 'package:fizmaa/Screens/onboarding/fizma_logo.dart';
+import 'package:fizmaa/models_n_services/login/login_svc.dart';
+import 'package:fizmaa/utils/app_preference.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:fizma/api_endpoints/api_endpoint.dart';
-import 'package:fizma/api_endpoints/dio_client.dart';
-import 'package:fizma/models_n_services/assign_volunteers/assign_volunteers_model.dart';
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/api_endpoints/dio_client.dart';
+import 'package:fizmaa/models_n_services/assign_volunteers/assign_volunteers_model.dart';
 
 class AssignVolunteerService {
   final Dio _dio = DioClient.instance;

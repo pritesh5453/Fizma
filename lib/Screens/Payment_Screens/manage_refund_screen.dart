@@ -1,6 +1,6 @@
-import 'package:fizma/Screens/Payment_Screens/cancellation_request_screen.dart';
-import 'package:fizma/Screens/Payment_Screens/transaction_history.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/Payment_Screens/cancellation_request_screen.dart';
+import 'package:fizmaa/Screens/Payment_Screens/transaction_history.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class ManageRefundScreen extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:fizma/Screens/navbar/navbar.dart';
-import 'package:fizma/Screens/onboarding/fizma_logo.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/navbar/navbar.dart';
+import 'package:fizmaa/Screens/onboarding/fizma_logo.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

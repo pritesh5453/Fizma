@@ -24,4 +24,7 @@ class ApiEndpoints {
 
         // ✅ Publish Event
       static const String publishEvent = '/api/Event/publish-event';
+
+      // create volunteer
+      static String createVolunteer() => '$baseUrl/api/volunteer/create-volunteer';
 }

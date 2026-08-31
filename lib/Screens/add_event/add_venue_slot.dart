@@ -1,16 +1,16 @@
 // ✅ Remove self‑import
-import 'package:fizma/Screens/add_event/add_event_slot.dart';
-import 'package:fizma/Screens/add_event/add_venue_slot.dart' hide EventSlot, VenueOption;
-import 'package:fizma/Screens/add_event/create_table_screen.dart';
-import 'package:fizma/Screens/add_event/create_ticket/create_ticket.dart';
-import 'package:fizma/Screens/add_event/create_ticket_n_tables_screen.dart' hide VenueOption;
-import 'package:fizma/Screens/add_event/event_slot.dart' hide EventSlot;
-import 'package:fizma/models_n_services/event_slot/event_slot_svc.dart';
-import 'package:fizma/models_n_services/event_venue/event_venue_model.dart';
-import 'package:fizma/models_n_services/event_venue/event_venue_svc.dart';
-import 'package:fizma/models_n_services/event_slot/event_slot_model.dart';
-import 'package:fizma/models_n_services/venue_list/venue_list_model.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/add_event/add_event_slot.dart';
+import 'package:fizmaa/Screens/add_event/add_venue_slot.dart' hide EventSlot, VenueOption;
+import 'package:fizmaa/Screens/add_event/create_table_screen.dart';
+import 'package:fizmaa/Screens/add_event/create_ticket/create_ticket.dart';
+import 'package:fizmaa/Screens/add_event/create_ticket_n_tables_screen.dart' hide VenueOption;
+import 'package:fizmaa/Screens/add_event/event_slot.dart' hide EventSlot;
+import 'package:fizmaa/models_n_services/event_slot/event_slot_svc.dart';
+import 'package:fizmaa/models_n_services/event_venue/event_venue_model.dart';
+import 'package:fizmaa/models_n_services/event_venue/event_venue_svc.dart';
+import 'package:fizmaa/models_n_services/event_slot/event_slot_model.dart';
+import 'package:fizmaa/models_n_services/venue_list/venue_list_model.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class VenueWithSlots {

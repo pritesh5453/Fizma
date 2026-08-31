@@ -1,5 +1,6 @@
-import 'package:fizma/Screens/Profile/profile_details_screen.dart';
-import 'package:fizma/Screens/voluteer/VolunteersScreen.dart';
+import 'package:fizmaa/Screens/Profile/profile_details_screen.dart';
+import 'package:fizmaa/Screens/Profile/venue_list.dart';
+import 'package:fizmaa/Screens/voluteer/VolunteersScreen.dart';
 import 'package:flutter/material.dart';
 
 class ProfileManagementScreen extends StatelessWidget {
@@ -178,7 +179,9 @@ class ProfileManagementScreen extends StatelessWidget {
                         title: 'Venues',
                         subtitle: 'Manage event locations',
                         onTap: () {
-                          // Navigate to Venues management screen
+                          Navigator.push(context, 
+                          MaterialPageRoute(builder: (context) => const VenueListScreen())
+                          );
                         },
                       ),
                       const Divider(height: 1, color: Color(0xFFF3F4F6)),
@@ -192,7 +195,7 @@ class ProfileManagementScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const VolunteersScreen(),
+                              builder: (context) => const VolunteersScreen(organiserId: null,),
                             ),
                           );
                         },

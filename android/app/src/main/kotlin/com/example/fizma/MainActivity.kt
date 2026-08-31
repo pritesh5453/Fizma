@@ -1,4 +1,4 @@
-package com.example.fizma
+package com.techmetsolutions.fizma
 
 import io.flutter.embedding.android.FlutterActivity
 

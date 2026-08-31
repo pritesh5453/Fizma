@@ -1,9 +1,9 @@
 // lib/models_n_services/events/event_service.dart
 
 import 'package:dio/dio.dart';
-import 'package:fizma/api_endpoints/api_endpoint.dart';
-import 'package:fizma/api_endpoints/dio_client.dart';
-import 'package:fizma/models_n_services/events/all_events_model.dart';
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/api_endpoints/dio_client.dart';
+import 'package:fizmaa/models_n_services/events/all_events_model.dart';
 
 class EventService {
   final Dio _dio = DioClient.instance;

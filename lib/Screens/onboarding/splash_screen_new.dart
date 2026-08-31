@@ -1,7 +1,7 @@
-import 'package:fizma/Screens/Auth/login_new.dart';
-import 'package:fizma/Screens/onboarding/decorative_icon.dart';
-import 'package:fizma/Screens/onboarding/fizma_logo.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/Auth/login_new.dart';
+import 'package:fizmaa/Screens/onboarding/decorative_icon.dart';
+import 'package:fizmaa/Screens/onboarding/fizma_logo.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 /// Splash screen that reproduces the actual designed animation:

@@ -1,6 +1,6 @@
 // lib/models_n_services/event_venue/event_venue_model.dart
 
-import 'package:fizma/models_n_services/venue_list/venue_list_model.dart';
+import 'package:fizmaa/models_n_services/venue_list/venue_list_model.dart';
 
 class EventVenueResponse {
   final bool success;

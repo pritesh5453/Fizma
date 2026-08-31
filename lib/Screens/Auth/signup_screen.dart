@@ -1,5 +1,5 @@
-import 'package:fizma/Screens/Auth/login_new.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/Auth/login_new.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class CreateAccountScreen extends StatefulWidget {

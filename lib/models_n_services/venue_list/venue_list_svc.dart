@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:fizma/api_endpoints/api_endpoint.dart';
-import 'package:fizma/models_n_services/add_venue/add_venue_model.dart';
-import 'package:fizma/models_n_services/venue_list/venue_list_model.dart';
-import 'package:fizma/utils/app_preference.dart';
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/models_n_services/add_venue/add_venue_model.dart';
+import 'package:fizmaa/models_n_services/venue_list/venue_list_model.dart';
+import 'package:fizmaa/utils/app_preference.dart';
 
 class VenueService {
   final Dio _dio;

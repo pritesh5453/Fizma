@@ -1,9 +1,9 @@
-import 'package:fizma/Screens/Profile/profile_screen.dart';
-import 'package:fizma/Screens/add_event/add_event_screen.dart';
-import 'package:fizma/Screens/events/events.dart';
-import 'package:fizma/Screens/home/homescreen.dart';
-import 'package:fizma/Screens/revenue/revenue_screen.dart';
-import 'package:fizma/utils/app_preference.dart';
+import 'package:fizmaa/Screens/Profile/profile_screen.dart';
+import 'package:fizmaa/Screens/add_event/add_event_screen.dart';
+import 'package:fizmaa/Screens/events/events.dart';
+import 'package:fizmaa/Screens/home/homescreen.dart';
+import 'package:fizmaa/Screens/revenue/revenue_screen.dart';
+import 'package:fizmaa/utils/app_preference.dart';
 import 'package:flutter/material.dart';
 
 class EventsNavBar extends StatefulWidget {

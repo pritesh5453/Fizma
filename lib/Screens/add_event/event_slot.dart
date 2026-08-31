@@ -1,4 +1,4 @@
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 /// Simple data model representing one scheduled show/slot for a venue.

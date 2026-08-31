@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:fizma/api_endpoints/api_endpoint.dart';
-import 'package:fizma/api_endpoints/dio_client.dart';
-import 'package:fizma/models_n_services/login/login_model.dart';
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/api_endpoints/dio_client.dart';
+import 'package:fizmaa/models_n_services/login/login_model.dart';
 
 class OrganiserAuthService {
   final Dio _dio = DioClient.instance;

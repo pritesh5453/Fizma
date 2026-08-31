@@ -1,11 +1,11 @@
-import 'package:fizma/Screens/add_event/add_event_slot.dart';
-import 'package:fizma/Screens/add_event/add_venue_slot.dart' hide VenueOption;
-import 'package:fizma/models_n_services/add_venue/add_venue_model.dart';
-import 'package:fizma/models_n_services/venue_list/venue_list_svc.dart';
-import 'package:fizma/models_n_services/venue_list/venue_list_model.dart';
-import 'package:fizma/models_n_services/venue_submit/venue_request_model.dart';
-import 'package:fizma/models_n_services/venue_submit/venue_request_svc.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/add_event/add_event_slot.dart';
+import 'package:fizmaa/Screens/add_event/add_venue_slot.dart' hide VenueOption;
+import 'package:fizmaa/models_n_services/add_venue/add_venue_model.dart';
+import 'package:fizmaa/models_n_services/venue_list/venue_list_svc.dart';
+import 'package:fizmaa/models_n_services/venue_list/venue_list_model.dart';
+import 'package:fizmaa/models_n_services/venue_submit/venue_request_model.dart';
+import 'package:fizmaa/models_n_services/venue_submit/venue_request_svc.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 // ---------- Local Data Model for a Venue Entry (with controllers) ----------

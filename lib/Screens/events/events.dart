@@ -1,5 +1,5 @@
-import 'package:fizma/Screens/events/EventDetails_screen.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/events/EventDetails_screen.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 // ---------- Event Model ----------

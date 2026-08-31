@@ -1,8 +1,8 @@
 // lib/api_endpoints/dio_client.dart
 
 import 'package:dio/dio.dart';
-import 'package:fizma/api_endpoints/api_endpoint.dart';
-import 'package:fizma/utils/app_preference.dart';   // ✅ import for token
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/utils/app_preference.dart';   // ✅ import for token
 
 class DioClient {
   DioClient._();

@@ -1,4 +1,4 @@
-import 'package:fizma/Screens/Profile/kyc/buisness_form.dart';
+import 'package:fizmaa/Screens/Profile/kyc/buisness_form.dart';
 import 'package:flutter/material.dart';
 
 class OrganizerProfileScreen extends StatelessWidget {

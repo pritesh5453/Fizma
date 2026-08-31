@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:fizma/api_endpoints/api_endpoint.dart';
-import 'package:fizma/models_n_services/venue_submit/venue_request_model.dart';
-import 'package:fizma/utils/app_preference.dart';
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/models_n_services/venue_submit/venue_request_model.dart';
+import 'package:fizmaa/utils/app_preference.dart';
 
 class VenueSubmitService {
   late final Dio _dio;

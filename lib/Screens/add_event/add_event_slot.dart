@@ -1,6 +1,6 @@
 // lib/Screens/add_event/event_slot.dart
 
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 // ---------- ENHANCED EVENT SLOT MODEL ----------

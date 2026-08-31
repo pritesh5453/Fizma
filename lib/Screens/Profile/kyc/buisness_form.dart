@@ -1,6 +1,6 @@
-import 'package:fizma/Screens/Profile/kyc/bank_details_screen.dart';
-import 'package:fizma/Screens/Profile/kyc/kyc_details.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/Profile/kyc/bank_details_screen.dart';
+import 'package:fizmaa/Screens/Profile/kyc/kyc_details.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 // =============================================================================

@@ -1,5 +1,5 @@
-// import 'package:fizma/Screens/add_event/add_volunteer/voluteer_list_screen.dart';
-// import 'package:fizma/utils/appcolors.dart';
+// import 'package:fizmaa/Screens/add_event/add_volunteer/voluteer_list_screen.dart';
+// import 'package:fizmaa/utils/appcolors.dart';
 // import 'package:flutter/material.dart';
 
 // class ReviewVolunteerDetailsScreen extends StatefulWidget {

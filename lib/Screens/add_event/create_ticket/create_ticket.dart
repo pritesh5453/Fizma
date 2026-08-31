@@ -1,7 +1,7 @@
-import 'package:fizma/Screens/add_event/create_ticket/PreviewTicketScreen.dart';
-import 'package:fizma/models_n_services/create_ticket_model.dart/create_ticket_model.dart';
-import 'package:fizma/models_n_services/create_ticket_model.dart/create_ticket_svc.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/add_event/create_ticket/PreviewTicketScreen.dart';
+import 'package:fizmaa/models_n_services/create_ticket_model.dart/create_ticket_model.dart';
+import 'package:fizmaa/models_n_services/create_ticket_model.dart/create_ticket_svc.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 // ---------- Ticket Data Model ----------

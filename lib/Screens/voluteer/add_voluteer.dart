@@ -1,4 +1,5 @@
-import 'package:fizma/Screens/voluteer/review_details_screen.dart';
+import 'package:fizmaa/Screens/voluteer/review_details_screen.dart';
+import 'package:fizmaa/utils/app_preference.dart';
 import 'package:flutter/material.dart';
 
 class AddVolunteerScreen extends StatefulWidget {
@@ -9,11 +10,8 @@ class AddVolunteerScreen extends StatefulWidget {
 }
 
 class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
-  String? _selectedDesk;
   int _accessType = 0; // 0: Set Password, 1: Send Invite Link
   bool _isPasswordVisible = false;
-  bool _canViewTickets = true;
-  bool _canScanTickets = true;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -169,52 +167,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Registration Desk
-                                _buildLabel('Registration Desk'),
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: const Color(0xFFFEE2E2)),
-                                  ),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: _selectedDesk,
-                                      hint: const Text(
-                                        'Select Desk',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF9CA3AF),
-                                        ),
-                                      ),
-                                      isExpanded: true,
-                                      icon: const Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        color: Color(0xFF4B5563),
-                                      ),
-                                      items: ['Main Gate Desk', 'VIP Desk', 'Press Desk']
-                                          .map((desk) => DropdownMenuItem(
-                                                value: desk,
-                                                child: Text(
-                                                  desk,
-                                                  style: const TextStyle(
-                                                    fontSize: 12,
-                                                    color: Color(0xFF1F2937),
-                                                  ),
-                                                ),
-                                              ))
-                                          .toList(),
-                                      onChanged: (val) {
-                                        setState(() => _selectedDesk = val);
-                                      },
-                                    ),
-                                  ),
-                                ),
-
-                                const SizedBox(height: 14),
-
                                 // Volunteer Name
                                 _buildLabel('Volunteer Name'),
                                 const SizedBox(height: 6),
@@ -241,7 +193,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                                 const SizedBox(height: 6),
                                 _buildTextField(
                                   controller: _emailController,
-                                  hintText: 'Enter Name',
+                                  hintText: 'Enter email',
                                   keyboardType: TextInputType.emailAddress,
                                 ),
 
@@ -325,148 +277,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
 
                     const SizedBox(height: 16),
 
-                    // ---------- VOLUNTEER PERMISSIONS CARD ----------
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFF3F4F6)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header Banner
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFF1F2),
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(20),
-                                topRight: Radius.circular(20),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFEE2E2),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: const Icon(
-                                    Icons.shield_outlined,
-                                    color: Color(0xFFEF4444),
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: const [
-                                    Text(
-                                      'Volunteer Permissions',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF1F2937),
-                                      ),
-                                    ),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      'This volunteer will have the following access.',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF9CA3AF),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Toggles & Note
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                _buildPermissionToggle(
-                                  icon: Icons.remove_red_eye_outlined,
-                                  title: 'View Tickets',
-                                  subtitle: 'Can view ticket list and details',
-                                  value: _canViewTickets,
-                                  onChanged: (val) => setState(() => _canViewTickets = val),
-                                ),
-                                const Divider(height: 20, color: Color(0xFFF3F4F6)),
-                                _buildPermissionToggle(
-                                  icon: Icons.qr_code_scanner_rounded,
-                                  title: 'Scan Tickets',
-                                  subtitle: 'Can scan and validate tickets',
-                                  value: _canScanTickets,
-                                  onChanged: (val) => setState(() => _canScanTickets = val),
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Warning Note Container
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFF1F2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 18,
-                                        height: 18,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFFEF4444),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.priority_high_rounded,
-                                          color: Colors.white,
-                                          size: 12,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: const [
-                                            Text(
-                                              'Note',
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFFEF4444),
-                                              ),
-                                            ),
-                                            SizedBox(height: 2),
-                                            Text(
-                                              'Volunteer will not be able to edit event, tickets, pricing or any other settings.',
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color: Color(0xFF6B7280),
-                                                height: 1.3,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
+                    // ---------- VOLUNTEER PERMISSIONS CARD (REMOVED) ----------
                     const SizedBox(height: 12),
                   ],
                 ),
@@ -481,10 +292,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(context, 
-                    MaterialPageRoute(builder: (context) => const ReviewDetailsScreen()));
-                  },
+                  onPressed: _onSavePressed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFEF4444),
                     elevation: 0,
@@ -509,6 +317,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     );
   }
 
+  // ---------- Helper Widgets ----------
   Widget _buildLabel(String text) {
     return Text(
       text,
@@ -611,60 +420,55 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     );
   }
 
-  Widget _buildPermissionToggle({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF1F2),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: const Color(0xFFEF4444), size: 16),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Color(0xFF9CA3AF),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Transform.scale(
-          scale: 0.8,
-          child: Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Colors.white,
-            activeTrackColor: const Color(0xFFEF4444),
-            inactiveThumbColor: Colors.white,
-            inactiveTrackColor: const Color(0xFFE5E7EB),
-          ),
-        ),
-      ],
+  // ---------- Save Logic ----------
+  Future<void> _onSavePressed() async {
+    // Validate fields (desk removed)
+    if (_nameController.text.trim().isEmpty) {
+      _showSnackbar('Please enter volunteer name');
+      return;
+    }
+    if (_phoneController.text.trim().isEmpty) {
+      _showSnackbar('Please enter phone number');
+      return;
+    }
+    if (_passwordController.text.trim().isEmpty) {
+      _showSnackbar('Please set a password');
+      return;
+    }
+
+    // Get organiser ID from preferences
+    final organiserId = await AppPreferences.getOrganiserId();
+    if (organiserId == null) {
+      _showSnackbar('Organiser not found. Please login again.');
+      return;
+    }
+
+    // Prepare data map – access now uses a default value
+    final volunteerData = {
+      'organiser_id': organiserId,
+      'volunteer_name': _nameController.text.trim(),
+      'phone': _phoneController.text.trim(),
+      'email': _emailController.text.trim(),
+      'access': 'Volunteer', // default role – no desk selection anymore
+      'password': _passwordController.text.trim(),
+      'is_active': true,
+    };
+
+    // Navigate to ReviewDetailsScreen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReviewDetailsScreen(volunteerData: volunteerData),
+      ),
+    );
+  }
+
+  void _showSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFFEF4444),
+      ),
     );
   }
 }

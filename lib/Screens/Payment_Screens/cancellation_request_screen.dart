@@ -1,4 +1,4 @@
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class CancellationRequestScreen extends StatefulWidget {

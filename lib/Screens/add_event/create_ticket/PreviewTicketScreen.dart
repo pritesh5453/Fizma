@@ -1,7 +1,7 @@
-import 'package:fizma/Screens/add_event/add_venue_screen.dart';
-import 'package:fizma/Screens/navbar/navbar.dart';
-import 'package:fizma/utils/app_preference.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/add_event/add_venue_screen.dart';
+import 'package:fizmaa/Screens/navbar/navbar.dart';
+import 'package:fizmaa/utils/app_preference.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class PreviewTicketScreen extends StatefulWidget {

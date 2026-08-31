@@ -1,16 +1,16 @@
-import 'package:fizma/Screens/add_event/add_venue_slot.dart';
-import 'package:fizma/Screens/add_event/event_publish.dart';
-import 'package:fizma/Screens/navbar/navbar.dart';
-import 'package:fizma/models_n_services/add_event/add_event_model.dart';
-import 'package:fizma/models_n_services/add_event/add_event_svc.dart';
-import 'package:fizma/models_n_services/assign_volunteers/assign_volunteers_model.dart';
-import 'package:fizma/models_n_services/assign_volunteers/assign_volunteers_svc.dart';
-import 'package:fizma/models_n_services/event_volunteers/volunteers_list.dart';
-import 'package:fizma/models_n_services/event_volunteers/volunteers_list_svc.dart';
-import 'package:fizma/models_n_services/publish_event/publish_event_model.dart';
-import 'package:fizma/models_n_services/publish_event/publish_event_svc.dart';
-import 'package:fizma/utils/app_preference.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/add_event/add_venue_slot.dart';
+import 'package:fizmaa/Screens/add_event/event_publish.dart';
+import 'package:fizmaa/Screens/navbar/navbar.dart';
+import 'package:fizmaa/models_n_services/add_event/add_event_model.dart';
+import 'package:fizmaa/models_n_services/add_event/add_event_svc.dart';
+import 'package:fizmaa/models_n_services/assign_volunteers/assign_volunteers_model.dart';
+import 'package:fizmaa/models_n_services/assign_volunteers/assign_volunteers_svc.dart';
+import 'package:fizmaa/models_n_services/event_volunteers/volunteers_list.dart';
+import 'package:fizmaa/models_n_services/event_volunteers/volunteers_list_svc.dart';
+import 'package:fizmaa/models_n_services/publish_event/publish_event_model.dart';
+import 'package:fizmaa/models_n_services/publish_event/publish_event_svc.dart';
+import 'package:fizmaa/utils/app_preference.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class AssignVolunteersScreen extends StatefulWidget {

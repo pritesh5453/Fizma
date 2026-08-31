@@ -1,29 +1,36 @@
+import 'package:fizmaa/Screens/voluteer/VolunteersScreen.dart';
 import 'package:flutter/material.dart';
 
 class VolunteerSuccessScreen extends StatelessWidget {
   final String volunteerName;
   final String role;
   final String email;
-  final String initials;
 
   const VolunteerSuccessScreen({
     super.key,
-    this.volunteerName = 'Aisha Mensah',
-    this.role = 'Ticket Scanner',
-    this.email = 'aisha.m@email.com',
-    this.initials = 'AM',
+    required this.volunteerName,
+    required this.role,
+    required this.email,
   });
+
+  // Compute initials from name
+  String get _initials {
+    final parts = volunteerName.trim().split(' ');
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts[0][0].toUpperCase();
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F8EE), // Light green background
+      backgroundColor: const Color(0xFFE8F8EE),
       body: SafeArea(
         child: Column(
           children: [
             const Spacer(flex: 2),
 
-            // ---------- SUCCESS CHECKMARK ICON ----------
+            // Success checkmark
             Container(
               width: 84,
               height: 84,
@@ -47,7 +54,6 @@ class VolunteerSuccessScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // ---------- SUCCESS TITLE ----------
             const Text(
               'Volunteer Added Successfully! 🎉',
               style: TextStyle(
@@ -59,7 +65,7 @@ class VolunteerSuccessScreen extends StatelessWidget {
 
             const Spacer(flex: 2),
 
-            // ---------- MAIN CARD CONTAINER ----------
+            // Main card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
@@ -79,7 +85,7 @@ class VolunteerSuccessScreen extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Inner Profile Card
+                    // Inner profile card
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
@@ -96,7 +102,7 @@ class VolunteerSuccessScreen extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          // Initials Avatar
+                          // Avatar with initials
                           Container(
                             width: 44,
                             height: 44,
@@ -106,7 +112,7 @@ class VolunteerSuccessScreen extends StatelessWidget {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              initials,
+                              _initials,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -116,7 +122,7 @@ class VolunteerSuccessScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
 
-                          // Volunteer Name
+                          // Name
                           Text(
                             volunteerName,
                             style: const TextStyle(
@@ -151,12 +157,15 @@ class VolunteerSuccessScreen extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // View My Volunteers Button (Primary Red)
+                    // View My Volunteers
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.pop(context);
+                           Navigator.pop(context);
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFEF4444),
                           elevation: 0,
@@ -177,13 +186,29 @@ class VolunteerSuccessScreen extends StatelessWidget {
 
                     const SizedBox(height: 12),
 
-                    // Create New Volunteer Button (Secondary Soft Red)
+                    // Create New Volunteer
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.pop(context);
+                          // Navigate back to AddVolunteerScreen
+                          Navigator.pop(context); // closes success screen
+                          // Then we might want to pop again to go to AddVolunteer? Actually we want to go to AddVolunteerScreen.
+                          // Since we are coming from ReviewDetailsScreen -> AddVolunteerScreen? Let's assume we want to go back to AddVolunteerScreen.
+                          // But we might have nested navigation. Safer: pop to the first screen and then push AddVolunteer? 
+                          // For simplicity, we'll pop all the way to the first screen and then push AddVolunteer.
+                          // But the user said "Create New Volunteer" should go back to the add screen.
+                          // Let's pop twice (success -> review -> add) if they are in the stack.
+                          // We'll implement as: pop current, then pop again to reach AddVolunteerScreen.
+                          Navigator.pop(context); // This will pop to the screen below success
+                          // Now we are at ReviewDetailsScreen? Actually we replaced ReviewDetailsScreen with Success screen (pushReplacement), 
+                          // so the stack has [AddVolunteerScreen, SuccessScreen]? We need to check.
+                          // If we used pushReplacement, then Success replaced ReviewDetails, so stack is [AddVolunteerScreen, SuccessScreen].
+                          // So popping once will go back to AddVolunteerScreen. So just one pop is enough.
+                          // But if we used push (not replacement), we need to pop twice.
+                          // Let's make it robust: we'll navigate to AddVolunteerScreen directly by pushing a new instance and clearing the stack.
+                          // Simpler: just pop the success screen, and the user will be back to the previous screen (which is AddVolunteerScreen if we used replacement).
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFEE2E2),

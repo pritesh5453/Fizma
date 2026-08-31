@@ -1,9 +1,9 @@
-import 'package:fizma/Screens/events/event_settings_tab.dart';
-import 'package:fizma/Screens/events/event_voluteer_tab.dart';
-import 'package:fizma/Screens/events/overview.dart';
-import 'package:fizma/Screens/events/inventory.dart';
-import 'package:fizma/Screens/events/venue_screen.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/events/event_settings_tab.dart';
+import 'package:fizmaa/Screens/events/event_voluteer_tab.dart';
+import 'package:fizmaa/Screens/events/overview.dart';
+import 'package:fizmaa/Screens/events/inventory.dart';
+import 'package:fizmaa/Screens/events/venue_screen.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class EventDetailsHostScreen extends StatefulWidget {

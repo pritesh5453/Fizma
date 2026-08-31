@@ -1,15 +1,98 @@
-import 'package:fizma/Screens/voluteer/add_voluteer.dart';
+import 'package:fizmaa/Screens/voluteer/add_voluteer.dart';
+import 'package:fizmaa/models_n_services/event_volunteers/volunteers_list.dart';
+import 'package:fizmaa/models_n_services/event_volunteers/volunteers_list_svc.dart';
+import 'package:fizmaa/utils/app_preference.dart';
 import 'package:flutter/material.dart';
 
 class VolunteersScreen extends StatefulWidget {
-  const VolunteersScreen({super.key});
+  final int? organiserId; // now nullable
+  const VolunteersScreen({super.key, this.organiserId});
 
   @override
   State<VolunteersScreen> createState() => _VolunteersScreenState();
 }
 
 class _VolunteersScreenState extends State<VolunteersScreen> {
+  final VolunteerService _volunteerService = VolunteerService();
+
   int _selectedFilterIndex = 0; // 0: All, 1: Active, 2: Inactive
+  List<Volunteer> _allVolunteers = [];
+  List<Volunteer> _filteredVolunteers = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  int? _organiserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    // If organiserId is passed, use it; else fetch from preferences
+    if (widget.organiserId != null) {
+      _organiserId = widget.organiserId;
+      await _fetchVolunteers();
+    } else {
+      try {
+        final id = await AppPreferences.getOrganiserId();
+        if (id != null) {
+          _organiserId = id;
+          await _fetchVolunteers();
+        } else {
+          setState(() {
+            _errorMessage = 'Organiser ID not found. Please log in again.';
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
+        setState(() {
+          _errorMessage = 'Error loading organiser ID: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fetchVolunteers() async {
+    if (_organiserId == null) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final response = await _volunteerService.getVolunteers(_organiserId!);
+      setState(() {
+        _allVolunteers = response.data;
+        _applyFilter();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _applyFilter() {
+    setState(() {
+      if (_selectedFilterIndex == 0) {
+        _filteredVolunteers = List.from(_allVolunteers);
+      } else if (_selectedFilterIndex == 1) {
+        _filteredVolunteers =
+            _allVolunteers.where((v) => v.isActive == 1).toList();
+      } else {
+        _filteredVolunteers =
+            _allVolunteers.where((v) => v.isActive == 0).toList();
+      }
+    });
+  }
+
+  int get _activeCount =>
+      _allVolunteers.where((v) => v.isActive == 1).length;
+  int get _inactiveCount =>
+      _allVolunteers.where((v) => v.isActive == 0).length;
 
   @override
   Widget build(BuildContext context) {
@@ -63,12 +146,11 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
           children: [
             const SizedBox(height: 12),
 
-            // ---------- SEARCH BAR & ADD NEW BUTTON ----------
+            // ---------- SEARCH BAR & ADD NEW ----------
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  // Search Input
                   Expanded(
                     child: Container(
                       height: 44,
@@ -108,7 +190,6 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Add New Button
                   ElevatedButton.icon(
                     onPressed: () {
                       Navigator.push(
@@ -146,17 +227,17 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
               child: Row(
                 children: [
                   _buildFilterChip(
-                    label: 'All',
+                    label: 'All   ${_allVolunteers.length}',
                     index: 0,
                   ),
                   const SizedBox(width: 8),
                   _buildFilterChip(
-                    label: 'Active  10',
+                    label: 'Active   $_activeCount',
                     index: 1,
                   ),
                   const SizedBox(width: 8),
                   _buildFilterChip(
-                    label: 'Inactive  2',
+                    label: 'Inactive   $_inactiveCount',
                     index: 2,
                   ),
                 ],
@@ -167,61 +248,42 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
 
             // ---------- VOLUNTEERS LIST ----------
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _buildVolunteerCard(
-                    initials: 'AM',
-                    avatarBg: const Color(0xFFEF4444),
-                    name: 'Aisha Mensah',
-                    role: 'Ticket Scanner',
-                    email: 'aisha.m@email.com',
-                    eventsScanned: '14 events scanned',
-                    isActive: true,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildVolunteerCard(
-                    initials: 'CR',
-                    avatarBg: const Color(0xFFF59E0B),
-                    name: 'Carlos Rivera',
-                    role: 'Entry Manager',
-                    email: 'c.rivera@email.com',
-                    eventsScanned: '9 events scanned',
-                    isActive: true,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildVolunteerCard(
-                    initials: 'PN',
-                    avatarBg: const Color(0xFF10B981),
-                    name: 'Priya Nair',
-                    role: 'VIP Coordinator',
-                    email: 'priya.nair@email.com',
-                    eventsScanned: '22 events scanned',
-                    isActive: true,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildVolunteerCard(
-                    initials: 'JO',
-                    avatarBg: const Color(0xFF3B82F6),
-                    name: 'James Okonkwo',
-                    role: 'Ticket Scanner',
-                    email: 'james.o@email.com',
-                    eventsScanned: '6 events scanned',
-                    isActive: false,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildVolunteerCard(
-                    initials: 'EV',
-                    avatarBg: const Color(0xFF8B5CF6),
-                    name: 'Elena Vasquez',
-                    role: 'Floor Manager',
-                    email: 'e.vasquez@email.com',
-                    eventsScanned: '17 events scanned',
-                    isActive: true,
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Error loading volunteers',
+                                style: TextStyle(
+                                  color: Colors.red.shade700,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(_errorMessage!),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _initialize,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _filteredVolunteers.isEmpty
+                          ? const Center(
+                              child: Text('No volunteers found'),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              itemCount: _filteredVolunteers.length,
+                              itemBuilder: (context, index) {
+                                final volunteer = _filteredVolunteers[index];
+                                return _buildVolunteerCard(volunteer);
+                              },
+                            ),
             ),
           ],
         ),
@@ -229,21 +291,27 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
     );
   }
 
-  // Filter Chip Widget
   Widget _buildFilterChip({
     required String label,
     required int index,
   }) {
     final bool isSelected = _selectedFilterIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _selectedFilterIndex = index),
+      onTap: () {
+        setState(() {
+          _selectedFilterIndex = index;
+          _applyFilter();
+        });
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFFEF4444) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? const Color(0xFFEF4444) : const Color(0xFFF3F4F6),
+            color: isSelected
+                ? const Color(0xFFEF4444)
+                : const Color(0xFFF3F4F6),
           ),
         ),
         child: Text(
@@ -258,17 +326,24 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
     );
   }
 
-  // Volunteer Item Card Widget
-  Widget _buildVolunteerCard({
-    required String initials,
-    required Color avatarBg,
-    required String name,
-    required String role,
-    required String email,
-    required String eventsScanned,
-    required bool isActive,
-  }) {
+  Widget _buildVolunteerCard(Volunteer volunteer) {
+    final nameParts = volunteer.volunteerName.split(' ');
+    final initials = nameParts.isNotEmpty
+        ? (nameParts.length >= 2
+            ? '${nameParts[0][0]}${nameParts[1][0]}'
+            : nameParts[0][0])
+        : '?';
+    final List<Color> avatarColors = const [
+      Color(0xFFEF4444),
+      Color(0xFFF59E0B),
+      Color(0xFF10B981),
+      Color(0xFF3B82F6),
+      Color(0xFF8B5CF6),
+    ];
+    final avatarBg = avatarColors[volunteer.id % avatarColors.length];
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -278,7 +353,6 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Initials Avatar
           Container(
             width: 44,
             height: 44,
@@ -288,7 +362,7 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
             ),
             alignment: Alignment.center,
             child: Text(
-              initials,
+              initials.toUpperCase(),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 15,
@@ -297,8 +371,6 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
             ),
           ),
           const SizedBox(width: 12),
-
-          // Details Column
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,31 +379,30 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      name,
+                      volunteer.volunteerName,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1F2937),
                       ),
                     ),
-                    // Status Badge (Active/Inactive)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: isActive
+                        color: volunteer.isActive == 1
                             ? const Color(0xFFDCFCE7)
                             : const Color(0xFFF3F4F6),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        isActive ? 'Active' : 'Inactive',
+                        volunteer.isActive == 1 ? 'Active' : 'Inactive',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: isActive
+                          color: volunteer.isActive == 1
                               ? const Color(0xFF16A34A)
                               : const Color(0xFF6B7280),
                         ),
@@ -341,7 +412,7 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  role,
+                  volunteer.access.isNotEmpty ? volunteer.access : 'No role',
                   style: const TextStyle(
                     fontSize: 11,
                     color: Color(0xFF9CA3AF),
@@ -349,7 +420,7 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  email,
+                  volunteer.email,
                   style: const TextStyle(
                     fontSize: 11,
                     color: Color(0xFF9CA3AF),
@@ -357,7 +428,7 @@ class _VolunteersScreenState extends State<VolunteersScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  eventsScanned,
+                  '${volunteer.scanTickets} events scanned',
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,

@@ -1,7 +1,7 @@
-import 'package:fizma/Screens/Payment_Screens/Payment_screen.dart';
-import 'package:fizma/Screens/add_event/add_event_screen.dart';
-import 'package:fizma/Screens/home/components/live_analytics_screen.dart';
-import 'package:fizma/utils/appcolors.dart';
+import 'package:fizmaa/Screens/Payment_Screens/Payment_screen.dart';
+import 'package:fizmaa/Screens/add_event/add_event_screen.dart';
+import 'package:fizmaa/Screens/home/components/live_analytics_screen.dart';
+import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
