@@ -213,7 +213,7 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response.message)),
         );
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => CreateTicketsScreen(
@@ -473,14 +473,21 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
     );
   }
 
+  // ════════════════════════════════════════════════════════════════
+  // ✅ UPDATED: Slot Card with Form‑Style Read‑Only Text Fields
+  // ════════════════════════════════════════════════════════════════
   Widget _buildSlotItemCard({
     required int slotNumber,
     required EventSlot slot,
     required int venueCapacity,
     required VoidCallback onDelete,
   }) {
+    final repeatDaysText = slot.repeatWeekly && slot.repeatDays.isNotEmpty
+        ? slot.repeatDays.map((d) => const ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')
+        : 'None';
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -489,75 +496,103 @@ class _AddEventSlotScreenState extends State<AddEventSlotScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ---------- Header: Slot Number + Delete Button ----------
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  slot.title.isEmpty ? 'Slot $slotNumber' : slot.title,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.kTextDark),
-                ),
+              Text(
+                'Slot $slotNumber',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.kTextDark),
               ),
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline, color: AppColors.kRed, size: 18),
+                icon: const Icon(Icons.delete_outline, color: AppColors.kRed, size: 20),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
 
+          // ---------- Form Fields ----------
+          // Slot Title
+          _buildReadOnlyTextField(
+            label: 'Slot Title',
+            value: slot.title.isEmpty ? 'Untitled Slot' : slot.title,
+          ),
+          const SizedBox(height: 14),
+
+          // From Date & To Date in a row
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 14, color: AppColors.kHint),
-              const SizedBox(width: 6),
-              Text(
-                '${_formatDate(slot.fromDate)} → ${_formatDate(slot.toDate)}',
-                style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.7)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-
-          Row(
-            children: [
-              const Icon(Icons.event_available, size: 14, color: AppColors.kRed),
-              const SizedBox(width: 6),
-              Text(
-                'Reg. Deadline: ${_formatDate(slot.registrationDeadline)}',
-                style: TextStyle(fontSize: 12, color: AppColors.kRed.withOpacity(0.7)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-
-          Row(
-            children: [
-              const Icon(Icons.access_time, size: 14, color: AppColors.kHint),
-              const SizedBox(width: 6),
-              Text(
-                slot.allDay ? 'All Day' : '${slot.startTime ?? '--'} → ${slot.endTime ?? '--'}',
-                style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.7)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-
-          if (slot.repeatWeekly && slot.repeatDays.isNotEmpty)
-            Row(
-              children: [
-                const Icon(Icons.event_repeat, size: 14, color: AppColors.kHint),
-                const SizedBox(width: 6),
-                Text(
-                  'Repeats on: ${slot.repeatDays.map((d) => const ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}',
-                  style: TextStyle(fontSize: 12, color: AppColors.kTextDark.withOpacity(0.7)),
+              Expanded(
+                child: _buildReadOnlyTextField(
+                  label: 'From Date',
+                  value: _formatDate(slot.fromDate),
                 ),
-              ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildReadOnlyTextField(
+                  label: 'To Date',
+                  value: _formatDate(slot.toDate),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Registration Deadline
+          _buildReadOnlyTextField(
+            label: 'Registration Deadline',
+            value: _formatDate(slot.registrationDeadline),
+          ),
+          const SizedBox(height: 14),
+
+          // ---------- Repeat (if enabled) ----------
+          if (slot.repeatWeekly && slot.repeatDays.isNotEmpty)
+            _buildReadOnlyTextField(
+              label: 'Repeats On',
+              value: repeatDaysText,
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
         ],
       ),
+    );
+  }
+
+  // Helper: Read‑only text field with label (no icon)
+  Widget _buildReadOnlyTextField({
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          controller: TextEditingController(text: value),
+          enabled: false,
+          style: const TextStyle(fontSize: 13, color: AppColors.kTextDark),
+          decoration: const InputDecoration(
+            filled: true,
+            fillColor: Color(0xFFF9FAFB),
+            contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderSide: BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
