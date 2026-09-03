@@ -1,14 +1,17 @@
+
+import 'package:fizmaa/models_n_services/create_table/create_table_model.dart';
+import 'package:fizmaa/models_n_services/create_table/create_table_svc.dart';
 import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-// ---------- Table Data Model ----------
+// ---------- Table Data Model (same as before) ----------
 class TableTier {
   final String id;
   final String name;
   final int totalTables;
   final double price;
   final int maxPerPerson;
-  bool isActive;   // 👈 final hata diya
+  bool isActive;
   final bool reservationEnabled;
   final bool isDynamicPricing;
 
@@ -24,11 +27,13 @@ class TableTier {
   });
 }
 
-// ---------- Function to show Table Bottom Sheet ----------
+// ---------- Function to show Table Bottom Sheet (now with IDs) ----------
 Future<TableTier?> showCreateTableBottomSheet(
-  BuildContext context,
-  int capacity,
-) {
+  BuildContext context, {
+  required int eventId,
+  required int venueId,
+  required int slotId,
+}) {
   return showModalBottomSheet<TableTier>(
     context: context,
     isScrollControlled: true,
@@ -37,20 +42,34 @@ Future<TableTier?> showCreateTableBottomSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (context) => CreateTableBottomSheet(capacity: capacity, eventId: 1,),  // event ID Dummy
+    builder: (context) => CreateTableBottomSheet(
+      eventId: eventId,
+      venueId: venueId,
+      slotId: slotId,
+    ),
   );
 }
 
-// ---------- Bottom Sheet Widget ----------
+// ---------- Bottom Sheet Widget (now accepts IDs) ----------
 class CreateTableBottomSheet extends StatefulWidget {
-  final int capacity;
-  const CreateTableBottomSheet({super.key, required this.capacity, required int eventId});
+  final int eventId;
+  final int venueId;
+  final int slotId;
+
+  const CreateTableBottomSheet({
+    super.key,
+    required this.eventId,
+    required this.venueId,
+    required this.slotId,
+  });
 
   @override
-  State<CreateTableBottomSheet> createState() => _CreateTableBottomSheetState();
+  State<CreateTableBottomSheet> createState() =>
+      _CreateTableBottomSheetState();
 }
 
 class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
+  // ---------- Controllers (same) ----------
   final TextEditingController tableNameController =
       TextEditingController(text: 'VIP Table');
   final TextEditingController totalTableController =
@@ -77,6 +96,7 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
       TextEditingController();
   final TextEditingController contactNumberController = TextEditingController();
 
+  // ---------- Toggles ----------
   bool tableNameToggle = true;
   bool dynamicPricing = true;
   bool advancePayment = true;
@@ -102,6 +122,9 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
 
   static const int _descriptionMaxLength = 300;
   int _descriptionLength = 0;
+
+  // ---------- Loading state ----------
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -140,6 +163,104 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
     super.dispose();
   }
 
+  // ---------- Helper: Build Request Object ----------
+  TableTicketRequest _buildRequest() {
+    return TableTicketRequest(
+      eventId: widget.eventId,
+      venueId: widget.venueId,
+      slotId: widget.slotId,
+      tableName: tableNameController.text.trim().isNotEmpty
+          ? tableNameController.text.trim()
+          : 'VIP Table',
+      reservation: reservationEnabled ? 1 : 0,
+      description: descriptionController.text.trim(),
+      totalTable: int.tryParse(totalTableController.text) ?? 1,
+      tablePrice: double.tryParse(tablePriceController.text) ?? 0.0,
+      maxPersonsPerTable: int.tryParse(maxPersonsController.text) ?? 4,
+      ageRestriction: _selectedAgeRestriction,
+      maleAllocation: maleCount,
+      femaleAllocation: femaleCount,
+      otherAllocation: otherCount,
+      dynamicPricingEnabled: dynamicPricing ? 1 : 0,
+      dynamicThreshold: int.tryParse(belowThresholdController.text) ?? 10,
+      dynamicIncreasePercentage:
+          double.tryParse(increaseByController.text) ?? 5.0,
+      advancePaymentEnabled: advancePayment ? 1 : 0,
+      advancePercentage: double.tryParse(advancePercentController.text) ?? 50.0,
+      minTables: int.tryParse(minTableController.text) ?? 1,
+      maxTables: int.tryParse(maxTableController.text) ?? 200,
+      extraPersonEnabled: extraPersonAddOn ? 1 : 0,
+      maxExtraGuests: int.tryParse(extraGuestsController.text) ?? 0,
+      pricePerMaleGuest: double.tryParse(pricePerMaleController.text) ?? 0.0,
+      pricePerFemaleGuest:
+          double.tryParse(pricePerFemaleController.text) ?? 0.0,
+      oneTimeCheckIn: oneTimeCheckIn ? 1 : 0,
+      isActive: tableActive ? 1 : 0,
+    );
+  }
+
+  // ---------- Submit Method ----------
+  Future<void> _submit() async {
+    // Basic validation
+    if (tableNameController.text.trim().isEmpty) {
+      _showSnackBar('Please enter Table Name');
+      return;
+    }
+    if (totalTableController.text.trim().isEmpty ||
+        int.tryParse(totalTableController.text) == null) {
+      _showSnackBar('Please enter valid Total Tables');
+      return;
+    }
+    if (tablePriceController.text.trim().isEmpty ||
+        double.tryParse(tablePriceController.text) == null) {
+      _showSnackBar('Please enter valid Table Price');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final request = _buildRequest();
+      final service = TableTicketService();
+      final response = await service.createTableTicket(request);
+
+      // On success, return TableTier object
+      final table = TableTier(
+        id: response.id.toString(),
+        name: response.tableName,
+        totalTables: response.totalTables,
+        price: double.parse(response.tablePrice),
+        maxPerPerson: response.maxPersonsPerTable,
+        isActive: response.isActive == 1,
+        reservationEnabled: response.reservation == 1,
+        isDynamicPricing: response.dynamicPricingEnabled == 1,
+      );
+
+      if (mounted) {
+        Navigator.pop(context, table);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Table created successfully (ID: ${response.id})'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar('Error: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  // ---------- Build Method (exactly same as before, only bottom buttons changed) ----------
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -184,7 +305,8 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
                           ),
                           Switch(
                             value: tableNameToggle,
-                            onChanged: (v) => setState(() => tableNameToggle = v),
+                            onChanged: (v) =>
+                                setState(() => tableNameToggle = v),
                             activeColor: AppColors.kRed,
                           ),
                         ],
@@ -197,7 +319,8 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
                         label: 'Reservation',
                         value: reservationEnabled,
                         bold: true,
-                        onChanged: (v) => setState(() => reservationEnabled = v),
+                        onChanged: (v) =>
+                            setState(() => reservationEnabled = v),
                         subtitle:
                             'Replace online pricing and checkout with a \nphone call button for this table.',
                       ),
@@ -303,7 +426,8 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
                                         _label('When Tables left below'),
                                         const SizedBox(height: 8),
                                         _textField(
-                                            controller: belowThresholdController),
+                                            controller:
+                                                belowThresholdController),
                                       ],
                                     ),
                                   ),
@@ -334,7 +458,8 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
                           label: 'Advance Payment',
                           value: advancePayment,
                           bold: true,
-                          onChanged: (v) => setState(() => advancePayment = v),
+                          onChanged: (v) =>
+                              setState(() => advancePayment = v),
                           subtitle:
                               'Add your advance payment for confirming booking',
                         ),
@@ -452,7 +577,8 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
                                   count: genderPriceMaleCount,
                                   onDecrement: () => setState(() =>
                                       genderPriceMaleCount =
-                                          (genderPriceMaleCount - 1).clamp(0, 999)),
+                                          (genderPriceMaleCount - 1)
+                                              .clamp(0, 999)),
                                   onIncrement: () =>
                                       setState(() => genderPriceMaleCount++),
                                 ),
@@ -465,7 +591,8 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
                                   count: genderPriceFemaleCount,
                                   onDecrement: () => setState(() =>
                                       genderPriceFemaleCount =
-                                          (genderPriceFemaleCount - 1).clamp(0, 999)),
+                                          (genderPriceFemaleCount - 1)
+                                              .clamp(0, 999)),
                                   onIncrement: () =>
                                       setState(() => genderPriceFemaleCount++),
                                 ),
@@ -554,7 +681,8 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
     );
   }
 
-  // ---------- Top Bar ----------
+  // ---------- All helper widgets (unchanged from original) ----------
+
   Widget _buildTopBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
@@ -1168,6 +1296,7 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
     );
   }
 
+  // ---------- UPDATED Bottom Buttons with API integration ----------
   Widget _buildBottomButtons(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -1178,7 +1307,7 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
             child: SizedBox(
               height: 50,
               child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: _isLoading ? null : () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
                   backgroundColor: AppColors.kWhite,
                   side: const BorderSide(color: AppColors.kRed, width: 1.4),
@@ -1200,22 +1329,7 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
             child: SizedBox(
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  // Return the created table data
-                  final table = TableTier(
-                    id: DateTime.now().millisecondsSinceEpoch.toString(),
-                    name: tableNameController.text.isNotEmpty
-                        ? tableNameController.text
-                        : 'VIP Table',
-                    totalTables: int.tryParse(totalTableController.text) ?? 1,
-                    price: double.tryParse(tablePriceController.text) ?? 0,
-                    maxPerPerson: int.tryParse(maxPersonsController.text) ?? 4,
-                    isActive: tableActive,
-                    reservationEnabled: reservationEnabled,
-                    isDynamicPricing: dynamicPricing,
-                  );
-                  Navigator.pop(context, table);
-                },
+                onPressed: _isLoading ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.kRed,
                   foregroundColor: AppColors.kWhite,
@@ -1223,13 +1337,23 @@ class _CreateTableBottomSheetState extends State<CreateTableBottomSheet> {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text(
-                  'Submit',
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.kWhite),
-                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(AppColors.kWhite),
+                        ),
+                      )
+                    : const Text(
+                        'Submit',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.kWhite),
+                      ),
               ),
             ),
           ),

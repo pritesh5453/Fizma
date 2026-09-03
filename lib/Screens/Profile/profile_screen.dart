@@ -1,3 +1,5 @@
+import 'package:fizmaa/Screens/Profile/coupons_screen.dart';
+import 'package:fizmaa/Screens/Profile/kyc/buisness_form.dart';
 import 'package:fizmaa/Screens/Profile/profile_details_screen.dart';
 import 'package:fizmaa/Screens/Profile/venue_list.dart';
 import 'package:fizmaa/Screens/voluteer/VolunteersScreen.dart';
@@ -208,7 +210,12 @@ class ProfileManagementScreen extends StatelessWidget {
                         title: 'Coupons & Discounts',
                         subtitle: 'Create & manage promo codes',
                         onTap: () {
-                          // Navigate to Coupons management screen
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CouponsMainScreen(),
+                            ),
+                          );
                         },
                       ),
                       const Divider(height: 1, color: Color(0xFFF3F4F6)),
@@ -294,7 +301,12 @@ class ProfileManagementScreen extends StatelessWidget {
                         title: 'KYC & Verification',
                         subtitle: 'Business info, KYC, bank details',
                         onTap: () {
-                          // Navigate to KYC screen
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const BusinessOnboardingFlow(),
+                            ),
+                          );
                         },
                       ),
                       const Divider(height: 1, color: Color(0xFFF3F4F6)),

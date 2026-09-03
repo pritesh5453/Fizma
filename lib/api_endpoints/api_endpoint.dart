@@ -16,6 +16,7 @@ class ApiEndpoints {
       static const String addEventSlots = '$baseUrl/api/Event/add-event-slot';
 
       static const String createTicket = '/api/Event/create-ticket';
+      static const String tableTickets = '/api/Event/table-tickets';
 
       static String getVolunteers(int organiserId) =>
       '/api/volunteer/organiser/$organiserId';
@@ -27,4 +28,7 @@ class ApiEndpoints {
 
       // create volunteer
       static String createVolunteer() => '$baseUrl/api/volunteer/create-volunteer';
+
+      // get all events
+      static const String events = '/api/Event/events';
 }

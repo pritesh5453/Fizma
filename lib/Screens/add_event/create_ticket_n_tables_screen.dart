@@ -34,7 +34,10 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     if (widget.venuesWithSlots.isEmpty) return [];
     final slots = widget.venuesWithSlots[_activeVenueIndex].slots;
     // ✅ Only include slots with non-null id
-    return slots.where((s) => s.id != null).map((s) => MapEntry(s.title, s.id!)).toList();
+    return slots
+        .where((s) => s.id != null)
+        .map((s) => MapEntry(s.title, s.id!))
+        .toList();
   }
 
   late List<List<TicketTier>> _venueTickets;
@@ -104,7 +107,10 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
             _buildProgressBar(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -164,7 +170,11 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, size: 18, color: AppColors.kTextDark),
+            icon: const Icon(
+              Icons.arrow_back_ios,
+              size: 18,
+              color: AppColors.kTextDark,
+            ),
           ),
           const Text(
             'Add Event',
@@ -194,7 +204,9 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                   height: 4,
                   margin: EdgeInsets.only(right: index == 5 ? 0 : 6),
                   decoration: BoxDecoration(
-                    color: isCompleted ? AppColors.kRed : const Color(0xFFFFE0E0),
+                    color: isCompleted
+                        ? AppColors.kRed
+                        : const Color(0xFFFFE0E0),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -214,7 +226,11 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
               ),
               Text(
                 'Inventory',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.kRed),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.kRed,
+                ),
               ),
             ],
           ),
@@ -266,7 +282,11 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                     color: const Color(0xFFFFEAEA),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.park, color: Color(0xFF558B2F), size: 24),
+                  child: const Icon(
+                    Icons.park,
+                    color: Color(0xFF558B2F),
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -284,18 +304,27 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                       const SizedBox(height: 2),
                       Text(
                         '$city · Cap. ${venue.capacity}',
-                        style: const TextStyle(fontSize: 11.5, color: AppColors.kHint),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.kHint,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF3F4F6),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           venue.type ?? 'Venue',
-                          style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Color(0xFF6B7280),
+                          ),
                         ),
                       ),
                     ],
@@ -303,7 +332,10 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                 ),
                 if (isActive)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0084FF),
                       borderRadius: BorderRadius.circular(20),
@@ -363,7 +395,9 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected ? Colors.white : const Color(0xFF757575),
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             ),
           );
@@ -446,10 +480,17 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: _selectedTabIndex == 0 ? Colors.white : Colors.transparent,
+                        color: _selectedTabIndex == 0
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: _selectedTabIndex == 0
-                            ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                ),
+                              ]
                             : [],
                       ),
                       child: Center(
@@ -458,7 +499,9 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
-                            color: _selectedTabIndex == 0 ? AppColors.kRed : const Color(0xFF666666),
+                            color: _selectedTabIndex == 0
+                                ? AppColors.kRed
+                                : const Color(0xFF666666),
                           ),
                         ),
                       ),
@@ -471,10 +514,17 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
-                        color: _selectedTabIndex == 1 ? Colors.white : Colors.transparent,
+                        color: _selectedTabIndex == 1
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: _selectedTabIndex == 1
-                            ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                ),
+                              ]
                             : [],
                       ),
                       child: Center(
@@ -483,7 +533,9 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
-                            color: _selectedTabIndex == 1 ? AppColors.kRed : const Color(0xFF666666),
+                            color: _selectedTabIndex == 1
+                                ? AppColors.kRed
+                                : const Color(0xFF666666),
                           ),
                         ),
                       ),
@@ -521,7 +573,9 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                   } else {
                     final table = await showCreateTableBottomSheet(
                       context,
-                      activeVenue.capacity,
+                      eventId: widget.eventId,
+                      venueId: activeVenue.id,
+                      slotId: _selectedSlotId,
                     );
                     if (table != null) _addTable(table);
                   }
@@ -554,11 +608,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                       activeVenue,
                     );
                   } else {
-                    return _buildTableCard(
-                      item as TableTier,
-                      idx,
-                      activeVenue,
-                    );
+                    return _buildTableCard(item as TableTier, idx, activeVenue);
                   }
                 }).toList(),
               ],
@@ -576,7 +626,11 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFC2C2), width: 1, style: BorderStyle.solid),
+        border: Border.all(
+          color: const Color(0xFFFFC2C2),
+          width: 1,
+          style: BorderStyle.solid,
+        ),
       ),
       child: Column(
         children: [
@@ -587,7 +641,9 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              isTicket ? Icons.confirmation_number_outlined : Icons.table_restaurant_outlined,
+              isTicket
+                  ? Icons.confirmation_number_outlined
+                  : Icons.table_restaurant_outlined,
               color: AppColors.kRed,
               size: 24,
             ),
@@ -622,7 +678,9 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
               } else {
                 final table = await showCreateTableBottomSheet(
                   context,
-                  activeVenue.capacity,
+                  eventId: widget.eventId,
+                  venueId: activeVenue.id,
+                  slotId: _selectedSlotId,
                 );
                 if (table != null) _addTable(table);
               }
@@ -668,9 +726,14 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: ticket.isActive ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+                      color: ticket.isActive
+                          ? const Color(0xFFE8F5E9)
+                          : const Color(0xFFFFEBEE),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -734,10 +797,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
               padding: EdgeInsets.only(top: 4),
               child: Text(
                 'Dynamic Pricing Enabled',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.kHint,
-                ),
+                style: TextStyle(fontSize: 10, color: AppColors.kHint),
               ),
             ),
         ],
@@ -772,9 +832,14 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: table.isActive ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
+                      color: table.isActive
+                          ? const Color(0xFFE8F5E9)
+                          : const Color(0xFFFFEBEE),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -826,10 +891,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
               padding: EdgeInsets.only(top: 4),
               child: Text(
                 'Reservation Enabled',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.kHint,
-                ),
+                style: TextStyle(fontSize: 10, color: AppColors.kHint),
               ),
             ),
         ],
@@ -857,10 +919,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
           const SizedBox(width: 4),
           Text(
             '$label: ',
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.kHint,
-            ),
+            style: const TextStyle(fontSize: 10, color: AppColors.kHint),
           ),
           Text(
             value,
@@ -877,36 +936,57 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
   // ---------- Bottom Button ----------
   Widget _buildBottomButton() {
+    // Check if any ticket or table exists across all venues
+    bool hasInventory = false;
+    for (var list in _venueTickets) {
+      if (list.isNotEmpty) {
+        hasInventory = true;
+        break;
+      }
+    }
+    if (!hasInventory) {
+      for (var list in _venueTables) {
+        if (list.isNotEmpty) {
+          hasInventory = true;
+          break;
+        }
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: SizedBox(
         width: double.infinity,
         height: 48,
         child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AssignVolunteersScreen(
-                  eventId: widget.eventId,
-                  organiserId: widget.organiserId,
-                  venues: widget.venuesWithSlots,
-                ),
-              ),
-            );
-          },
+          onPressed: hasInventory
+              ? () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AssignVolunteersScreen(
+                        eventId: widget.eventId,
+                        organiserId: widget.organiserId,
+                        venues: widget.venuesWithSlots,
+                      ),
+                    ),
+                  );
+                }
+              : null, // Disabled when no inventory
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.kRed,
             foregroundColor: AppColors.kWhite,
             elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            // Optional: make disabled look lighter
+            disabledBackgroundColor: AppColors.kRed.withOpacity(0.5),
+            disabledForegroundColor: Colors.white.withOpacity(0.7),
           ),
           child: const Text(
             'Save & Assign Volunteers',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
       ),
