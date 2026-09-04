@@ -1,6 +1,9 @@
 import 'package:fizmaa/Screens/Payment_Screens/Payment_screen.dart';
+import 'package:fizmaa/Screens/Profile/coupons_screen.dart';
+import 'package:fizmaa/Screens/Profile/create_coupons_screen.dart';
 import 'package:fizmaa/Screens/add_event/add_event_screen.dart';
 import 'package:fizmaa/Screens/home/components/live_analytics_screen.dart';
+import 'package:fizmaa/Screens/voluteer/add_voluteer.dart';
 import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
@@ -113,19 +116,34 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const AddEventScreen()),
+                              builder: (context) => const AddEventScreen(),
+                            ),
                           );
                         },
                       ),
                       _buildQuickAction(
                         icon: Icons.local_offer_outlined,
                         label: 'Create\nCoupon',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CouponsMainScreen(),
+                            ),
+                          );
+                        },
                       ),
                       _buildQuickAction(
                         icon: Icons.person_add_alt,
                         label: 'Add\nVolunteer',
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AddVolunteerScreen(),
+                            ),
+                          );
+                        },
                       ),
                       _buildQuickAction(
                         icon: Icons.description_outlined,
@@ -190,7 +208,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      
     );
   }
 
@@ -293,11 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF2C2C2C),
-              size: 26,
-            ),
+            child: Icon(icon, color: const Color(0xFF2C2C2C), size: 26),
           ),
           const SizedBox(height: 8),
           Text(
@@ -415,7 +428,10 @@ class _DarkHeader extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.green,
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFF212028), width: 1.5),
+                        border: Border.all(
+                          color: const Color(0xFF212028),
+                          width: 1.5,
+                        ),
                       ),
                     ),
                   ),
@@ -483,7 +499,8 @@ class _PromoBanner extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const LiveAnalyticsScreen()),
+                  builder: (context) => const LiveAnalyticsScreen(),
+                ),
               );
             },
             child: const Text(
@@ -559,8 +576,10 @@ class _RecentEventCard extends StatelessWidget {
                   top: 6,
                   left: 6,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red,
                       borderRadius: BorderRadius.circular(4),
@@ -568,10 +587,7 @@ class _RecentEventCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
-                        CircleAvatar(
-                          radius: 2,
-                          backgroundColor: Colors.white,
-                        ),
+                        CircleAvatar(radius: 2, backgroundColor: Colors.white),
                         SizedBox(width: 3),
                         Text(
                           'LIVE',
@@ -606,7 +622,9 @@ class _RecentEventCard extends StatelessWidget {
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFEBF0),
                         borderRadius: BorderRadius.circular(12),
@@ -625,16 +643,22 @@ class _RecentEventCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.location_on_outlined,
-                        size: 12, color: Colors.grey),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 12,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 2),
                     Text(
                       location,
                       style: const TextStyle(fontSize: 10, color: Colors.grey),
                     ),
                     const SizedBox(width: 8),
-                    const Icon(Icons.calendar_today_outlined,
-                        size: 11, color: Colors.grey),
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 11,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 2),
                     Text(
                       date,

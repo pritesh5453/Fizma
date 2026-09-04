@@ -1,8 +1,14 @@
+import 'package:fizmaa/Screens/Profile/profile_screen.dart';
 import 'package:fizmaa/Screens/navbar/navbar.dart';
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/models_n_services/bank_details/bank_details_model.dart';
+import 'package:fizmaa/models_n_services/bank_details/bank_details_svc.dart';
+import 'package:fizmaa/utils/app_preference.dart';
 import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 
-class BankDetailsScreen extends StatelessWidget {
+class BankDetailsScreen extends StatefulWidget {
   final VoidCallback? onBackPressed;
   final VoidCallback? onNextPressed;
 
@@ -12,11 +18,129 @@ class BankDetailsScreen extends StatelessWidget {
     this.onNextPressed,
   }) : super(key: key);
 
-  // Success Dialog / Popup
+  @override
+  State<BankDetailsScreen> createState() => _BankDetailsScreenState();
+}
+
+class _BankDetailsScreenState extends State<BankDetailsScreen> {
+  // ---------- Controllers ----------
+  final TextEditingController _accountNumberController = TextEditingController();
+  final TextEditingController _ifscController = TextEditingController();
+  final TextEditingController _bankNameController = TextEditingController();
+  final TextEditingController _accountHolderController = TextEditingController();
+  final TextEditingController _upiController = TextEditingController();
+
+  // ---------- States ----------
+  bool _isLoading = true;
+  bool _isSubmitting = false;
+  int? _organiserId;
+
+  // ---------- Service ----------
+  late final BankService _bankService;
+
+  @override
+  void initState() {
+    super.initState();
+    final dio = Dio(BaseOptions(
+      baseUrl: ApiEndpoints.baseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    ));
+    _bankService = BankService(dio);
+    _loadData();
+  }
+
+  // ---------- Load Bank Details ----------
+  Future<void> _loadData() async {
+    try {
+      final id = await AppPreferences.getOrganiserId();
+      if (id != null) {
+        setState(() => _organiserId = id);
+        await _fetchBankDetails();
+      } else {
+        _showSnackBar('Organiser ID not found. Please login again.');
+      }
+    } catch (e) {
+      print('Error loading bank details: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchBankDetails() async {
+    try {
+      final response = await _bankService.getBankDetails();
+      final data = response.data;
+
+      if (data != null) {
+        _accountNumberController.text = data.accountNumber;
+        _ifscController.text = data.ifscCode;
+        _bankNameController.text = data.bankName;
+        _accountHolderController.text = data.accountHolderName;
+        _upiController.text = data.upiId;
+        print('✅ Bank details loaded successfully');
+      }
+    } catch (e) {
+      // If no bank details exist, just show empty fields
+      print('No bank details found or error: $e');
+    }
+  }
+
+  // ---------- Submit Bank Details ----------
+  Future<void> _submitBankDetails() async {
+    // Validations
+    if (_accountNumberController.text.trim().isEmpty) {
+      _showSnackBar('Please enter Account Number');
+      return;
+    }
+    if (_ifscController.text.trim().isEmpty) {
+      _showSnackBar('Please enter IFSC Code');
+      return;
+    }
+    if (_bankNameController.text.trim().isEmpty) {
+      _showSnackBar('Please enter Bank Name');
+      return;
+    }
+    if (_accountHolderController.text.trim().isEmpty) {
+      _showSnackBar('Please enter Account Holder Name');
+      return;
+    }
+    if (_upiController.text.trim().isEmpty) {
+      _showSnackBar('Please enter UPI ID');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final request = BankDetailsRequest(
+        accountNumber: _accountNumberController.text.trim(),
+        ifscCode: _ifscController.text.trim(),
+        bankName: _bankNameController.text.trim(),
+        accountHolderName: _accountHolderController.text.trim(),
+        upiId: _upiController.text.trim(),
+      );
+
+      final response = await _bankService.updateBankDetails(
+        request: request,
+      );
+
+      _showSnackBar(response.message, isError: false);
+
+      // Show success popup with navigation
+      _showSavedSuccessDialog(context);
+    } catch (e) {
+      _showSnackBar(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  // ---------- Success Dialog ----------
   void _showSavedSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -29,22 +153,23 @@ class BankDetailsScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Top Close (X) Button - Navigates directly to ProfileScreen
+                // Top Close (X) Button – Navigates to ProfileManagementScreen
                 Align(
                   alignment: Alignment.topRight,
                   child: GestureDetector(
                     onTap: () {
-                      Navigator.of(context).pop(); // Popup close karega
-                      Navigator.pushAndRemoveUntil(
+                      Navigator.of(context).pop(); // Close dialog
+                      Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const EventsNavBar(initialIndex: 4)),
-                        (route) => false, // Prevents going back to form after submission
+                        MaterialPageRoute(
+                          builder: (context) => const EventsNavBar(initialIndex: 3), // Navigate to Profile tab
+                        ),
                       );
                     },
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFEE2E2), // Light red bg
+                        color: Color(0xFFFEE2E2),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -56,32 +181,29 @@ class BankDetailsScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Success Icon with Confetti effect decoration
+                // Success Icon with Confetti
                 SizedBox(
                   height: 90,
                   width: 90,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Dots / Confetti elements
                       Positioned(top: 0, right: 25, child: _buildDot(Colors.redAccent, 8)),
                       Positioned(top: 15, left: 15, child: _buildDot(Colors.orangeAccent, 6)),
                       Positioned(top: 30, left: 0, child: _buildDot(Colors.purpleAccent, 5)),
                       Positioned(bottom: 25, right: 10, child: _buildDot(Colors.blueAccent, 5)),
                       Positioned(bottom: 10, right: 20, child: _buildDot(Colors.greenAccent, 7)),
                       Positioned(bottom: 5, left: 20, child: _buildDot(Colors.yellow, 7)),
-
-                      // Main Green Check Badge
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: const BoxDecoration(
-                          color: Color(0xFFDCFCE7), // Light green outer ring
+                          color: Color(0xFFDCFCE7),
                           shape: BoxShape.circle,
                         ),
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: const BoxDecoration(
-                            color: Color(0xFF22C55E), // Solid green circle
+                            color: Color(0xFF22C55E),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -96,7 +218,6 @@ class BankDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Title Text
                 const Text(
                   "Saved Successfully",
                   style: TextStyle(
@@ -107,9 +228,8 @@ class BankDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
 
-                // Subtitle Text
                 const Text(
-                  "Business Information updated successfully.",
+                  "Bank details updated successfully.",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
@@ -117,6 +237,37 @@ class BankDetailsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
+
+                // Continue Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.kRed,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EventsNavBar(initialIndex: 3),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Go to Profile',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -125,7 +276,6 @@ class BankDetailsScreen extends StatelessWidget {
     );
   }
 
-  // Small Dot Builder for Confetti Effect
   Widget _buildDot(Color color, double size) {
     return Container(
       width: size,
@@ -137,8 +287,45 @@ class BankDetailsScreen extends StatelessWidget {
     );
   }
 
+  void _showSnackBar(String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red.shade700 : Colors.green,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // ---------- Build ----------
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Container(
+        decoration: AppColors.screenGradient,
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.kTextDark, size: 20),
+              onPressed: widget.onBackPressed ?? () => Navigator.of(context).maybePop(),
+            ),
+            title: const Text(
+              'Bank Details',
+              style: TextStyle(
+                color: AppColors.kTextDark,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ),
+          body: const Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
     return Container(
       decoration: AppColors.screenGradient,
       child: Scaffold(
@@ -148,7 +335,7 @@ class BankDetailsScreen extends StatelessWidget {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.kTextDark, size: 20),
-            onPressed: onBackPressed ?? () => Navigator.of(context).maybePop(),
+            onPressed: widget.onBackPressed ?? () => Navigator.of(context).maybePop(),
           ),
           title: const Text(
             'Bank Details',
@@ -180,7 +367,8 @@ class BankDetailsScreen extends StatelessWidget {
               // Account Number
               _buildLabel("Account Number"),
               _buildTextField(
-                initialValue: "C8893202",
+                controller: _accountNumberController,
+                hintText: "Enter Account Number",
                 prefixIcon: Icons.edit_outlined,
               ),
               const SizedBox(height: 14),
@@ -188,7 +376,8 @@ class BankDetailsScreen extends StatelessWidget {
               // IFSC Code
               _buildLabel("IFSC Code"),
               _buildTextField(
-                hintText: "IFSC Code",
+                controller: _ifscController,
+                hintText: "Enter IFSC Code",
                 prefixIcon: Icons.edit_outlined,
               ),
               const SizedBox(height: 14),
@@ -196,7 +385,8 @@ class BankDetailsScreen extends StatelessWidget {
               // Bank Name
               _buildLabel("Bank Name"),
               _buildTextField(
-                initialValue: "SBI Bank",
+                controller: _bankNameController,
+                hintText: "Enter Bank Name",
                 prefixIcon: Icons.account_balance_outlined,
               ),
               const SizedBox(height: 14),
@@ -204,7 +394,8 @@ class BankDetailsScreen extends StatelessWidget {
               // Account Holder Name
               _buildLabel("Account Holder Name"),
               _buildTextField(
-                initialValue: "Vendor name",
+                controller: _accountHolderController,
+                hintText: "Enter Account Holder Name",
                 prefixIcon: Icons.person_outline,
               ),
               const SizedBox(height: 14),
@@ -212,7 +403,8 @@ class BankDetailsScreen extends StatelessWidget {
               // UPI ID
               _buildLabel("UPI ID"),
               _buildTextField(
-                initialValue: "sanjay.m@okaxis",
+                controller: _upiController,
+                hintText: "Enter UPI ID",
                 prefixIcon: Icons.account_balance_wallet_outlined,
               ),
               const SizedBox(height: 32),
@@ -230,7 +422,7 @@ class BankDetailsScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: onBackPressed ?? () => Navigator.of(context).maybePop(),
+                        onPressed: widget.onBackPressed ?? () => Navigator.of(context).maybePop(),
                         child: const Text(
                           "Back",
                           style: TextStyle(
@@ -253,18 +445,24 @@ class BankDetailsScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () {
-                          // Show Popup Dialog
-                          _showSavedSuccessDialog(context);
-                        },
-                        child: const Text(
-                          "Submit",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
+                        onPressed: _isSubmitting ? null : _submitBankDetails,
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                "Submit",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -278,7 +476,7 @@ class BankDetailsScreen extends StatelessWidget {
     );
   }
 
-  // Stepper Bar Component
+  // ---------- UI Helpers ----------
   Widget _buildStepperHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -296,11 +494,9 @@ class BankDetailsScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _stepItem(step: "1", title: "Business Info", isActive: false, isCompleted: true),
+          _stepItem(step: "1", title: "KYC Details", isActive: false, isCompleted: true),
           _stepDivider(),
-          _stepItem(step: "2", title: "KYC Details", isActive: false, isCompleted: true),
-          _stepDivider(),
-          _stepItem(step: "3", title: "Bank Details", isActive: true, isCompleted: false),
+          _stepItem(step: "2", title: "Bank Details", isActive: true, isCompleted: false),
         ],
       ),
     );
@@ -357,7 +553,7 @@ class BankDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildTextField({
-    String? initialValue,
+    required TextEditingController controller,
     String? hintText,
     IconData? prefixIcon,
   }) {
@@ -369,7 +565,7 @@ class BankDetailsScreen extends StatelessWidget {
         border: Border.all(color: AppColors.kBorder.withOpacity(0.5)),
       ),
       child: TextFormField(
-        initialValue: initialValue,
+        controller: controller,
         style: const TextStyle(
           fontSize: 13,
           color: AppColors.kTextDark,

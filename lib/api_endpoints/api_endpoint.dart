@@ -31,4 +31,32 @@ class ApiEndpoints {
 
       // get all events
       static const String events = '/api/Event/events';
+
+        static String getBusinessDetails(int organiserId) =>
+      '$baseUrl/api/organisers/$organiserId/business-details';
+
+      static String updateBusinessDetails(int organiserId) =>
+      '$baseUrl/api/organisers/$organiserId/business-details';
+
+        static String kycDetails(int organiserId) =>
+      '$baseUrl/api/kyc/$organiserId/kyc';
+
+      static String profile(int organiserId) =>
+      '$baseUrl/api/auth/profile/$organiserId';
+
+          static String bankDetails(int organiserId) =>
+      '$baseUrl/api/Bank/$organiserId/bank-details';
+
+       static String createCoupon(int organiserId) =>
+      '$baseUrl/api/coupon/$organiserId/coupons';
+
+      static String getCoupons(int organiserId, {String? status}) {
+    final uri = Uri.parse('$baseUrl/api/coupon/$organiserId/coupons');
+    if (status != null && status.isNotEmpty) {
+      return uri.replace(queryParameters: {'status': status}).toString();
+    }
+    return uri.toString();
+  }
+
+
 }

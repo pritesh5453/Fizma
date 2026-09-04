@@ -1,18 +1,11 @@
 import 'package:fizmaa/Screens/Auth/login_new.dart';
+import 'package:fizmaa/Screens/navbar/navbar.dart';
 import 'package:fizmaa/Screens/onboarding/decorative_icon.dart';
 import 'package:fizmaa/Screens/onboarding/fizma_logo.dart';
+import 'package:fizmaa/utils/app_preference.dart';
 import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
-/// Splash screen that reproduces the actual designed animation:
-///
-/// 1. Solid brand-red screen.
-/// 2. A diagonal wipe sweeps across, revealing the white background
-///    with the scattered decorative icon pattern and the red Fizmaa
-///    logo underneath (matches the Figma "wipe" transition frames).
-/// 3. That stage holds briefly, then crossfades into the final solid
-///    red screen with the white "Fizmaa" wordmark centered.
-/// 4. Navigates to [LoginScreen].
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -61,12 +54,25 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
 
-    // 5) Hold, then hand off to the login screen.
+    // 5) Hold, then check login status and navigate.
     await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
+
+    // ✅ Check if user already logged in
+    final token = await AppPreferences.getToken();
+    if (token != null && token.isNotEmpty) {
+      // Already logged in – go to home screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => const EventsNavBar(initialIndex: 0),
+        ),
+      );
+    } else {
+      // Not logged in – go to login screen
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
   }
 
   @override
@@ -86,18 +92,13 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  /// White icon-pattern + logo stage, with a solid-red layer on top
-  /// that gets clipped away diagonally as [_wipeProgress] advances.
   Widget _buildWipeStage() {
     return SizedBox.expand(
       key: const ValueKey('wipeStage'),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Base: white background + decorative icons + centered logo.
           const _WhiteIconLogoStage(),
-          // Overlay: solid red, clipped diagonally, shrinks to reveal
-          // the base layer beneath as the wipe animates.
           AnimatedBuilder(
             animation: _wipeProgress,
             builder: (context, child) {
@@ -113,8 +114,6 @@ class _SplashScreenState extends State<SplashScreen>
   }
 }
 
-/// White background, decorative icon pattern and the red Fizmaa logo
-/// centered on screen — matches the third reference frame.
 class _WhiteIconLogoStage extends StatelessWidget {
   const _WhiteIconLogoStage();
 
@@ -133,8 +132,6 @@ class _WhiteIconLogoStage extends StatelessWidget {
   }
 }
 
-/// Final solid red brand screen with the white wordmark centered —
-/// matches the fourth reference frame.
 class _RedWordmarkStage extends StatelessWidget {
   const _RedWordmarkStage();
 
@@ -160,10 +157,6 @@ class _RedWordmarkStage extends StatelessWidget {
   }
 }
 
-/// Clips a quadrilateral that starts as the full screen (progress 0)
-/// and shrinks toward the bottom-right corner (progress 1), with the
-/// top edge sweeping faster than the bottom edge so the boundary
-/// reads as a diagonal wipe rather than a straight vertical line.
 class _DiagonalWipeClipper extends CustomClipper<Path> {
   _DiagonalWipeClipper(this.progress);
 

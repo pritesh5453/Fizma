@@ -1,5 +1,9 @@
 import 'package:fizmaa/Screens/Profile/create_coupons_screen.dart';
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/models_n_services/coupons/all_coupons/get_all_coupons_svc.dart';
+import 'package:fizmaa/models_n_services/coupons/coupons_model.dart';
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 
 class CouponsMainScreen extends StatefulWidget {
   const CouponsMainScreen({Key? key}) : super(key: key);
@@ -8,77 +12,112 @@ class CouponsMainScreen extends StatefulWidget {
   State<CouponsMainScreen> createState() => _CouponsMainScreenState();
 }
 
-class _CouponsMainScreenState extends State<CouponsMainScreen> {
-  final List<Map<String, dynamic>> _coupons = [
-    {
-      'code': 'EARLYBIRD25',
-      'subtitle': 'Web Summit 2025',
-      'discount': '25% OFF',
-      'status': 'Active',
-      'statusColor': Colors.green.shade100,
-      'statusTextColor': Colors.green.shade800,
-      'used': 312,
-      'total': 500,
-      'perUser': '1x',
-      'expires': '2025-08-31',
-    },
-    {
-      'code': 'JAZZNIGHT10',
-      'subtitle': 'Jazz Under the Stars',
-      'discount': '₹10 OFF',
-      'status': 'Active',
-      'statusColor': Colors.green.shade100,
-      'statusTextColor': Colors.green.shade800,
-      'used': 67,
-      'total': 100,
-      'perUser': '1x',
-      'expires': '2025-08-22',
-    },
-    {
-      'code': 'FOUNDER50',
-      'subtitle': 'Founders Dinner — Austin',
-      'discount': '₹50 OFF',
-      'status': 'Expired',
-      'statusColor': Colors.grey.shade200,
-      'statusTextColor': Colors.grey.shade700,
-      'used': 20,
-      'total': 20,
-      'perUser': '1x',
-      'expires': '2025-09-04',
-    },
-    {
-      'code': 'VIP2025',
-      'subtitle': 'All Events',
-      'discount': '15% OFF',
-      'status': 'Active',
-      'statusColor': Colors.green.shade100,
-      'statusTextColor': Colors.green.shade800,
-      'used': 8,
-      'total': 50,
-      'perUser': '1x',
-      'expires': '2025-09-30',
-    },
-    {
-      'code': 'AIWORKSHOP',
-      'subtitle': 'AI Workshop Series',
-      'discount': '₹30 OFF',
-      'status': 'Scheduled',
-      'statusColor': Colors.lightBlue.shade100,
-      'statusTextColor': Colors.lightBlue.shade800,
-      'used': 0,
-      'total': 200,
-      'perUser': '2x',
-      'expires': '2025-10-04',
-    },
-  ];
+class _CouponsMainScreenState extends State<CouponsMainScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late final CouponApiService _couponService; // ✅ new class name
 
-  void _showCreateCouponBottomSheet(BuildContext context) {
+  List<CouponData> _coupons = [];
+  bool _isLoading = true;
+  String? _error;
+
+  static const List<String?> _statuses = [null, 'active', 'upcoming', 'expired'];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_onTabChanged);
+
+    final dio = Dio(BaseOptions(
+      baseUrl: ApiEndpoints.baseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    ));
+    _couponService = CouponApiService(dio); // ✅ new class name
+    _fetchCoupons();
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
+    final status = _statuses[_tabController.index];
+    _fetchCoupons(status: status);
+  }
+
+  Future<void> _fetchCoupons({String? status}) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await _couponService.getCoupons(status: status);
+      setState(() {
+        _coupons = response.data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showCreateCouponBottomSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const CreateCouponBottomSheet(),
-    );
+    ).then((result) {
+      if (result == true) {
+        final status = _statuses[_tabController.index];
+        _fetchCoupons(status: status);
+      }
+    });
+  }
+
+  String _formatDiscount(CouponData coupon) {
+    final value = coupon.discountValue;
+    if (coupon.discountType == 'percentage') {
+      return '$value% OFF';
+    } else {
+      return '₹$value OFF';
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Colors.green.shade100;
+      case 'expired':
+        return Colors.grey.shade200;
+      case 'upcoming':
+        return Colors.lightBlue.shade100;
+      default:
+        return Colors.grey.shade100;
+    }
+  }
+
+  Color _getStatusTextColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Colors.green.shade800;
+      case 'expired':
+        return Colors.grey.shade700;
+      case 'upcoming':
+        return Colors.lightBlue.shade800;
+      default:
+        return Colors.grey.shade700;
+    }
   }
 
   @override
@@ -96,7 +135,7 @@ class _CouponsMainScreenState extends State<CouponsMainScreen> {
           ),
           child: IconButton(
             icon: const Icon(Icons.chevron_left, color: Colors.black, size: 22),
-            onPressed: () {},
+            onPressed: () => Navigator.of(context).maybePop(),
           ),
         ),
         title: const Column(
@@ -115,163 +154,202 @@ class _CouponsMainScreenState extends State<CouponsMainScreen> {
             ),
             child: IconButton(
               icon: const Icon(Icons.add, color: Colors.white, size: 22),
-              onPressed: () => _showCreateCouponBottomSheet(context),
+              onPressed: _showCreateCouponBottomSheet,
             ),
           )
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: const Color(0xFFFF3B30),
+          labelColor: const Color(0xFFFF3B30),
+          unselectedLabelColor: Colors.grey.shade600,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal, fontSize: 14),
+          tabs: const [
+            Tab(text: 'All'),
+            Tab(text: 'Active'),
+            Tab(text: 'Upcoming'),
+            Tab(text: 'Expired'),
+          ],
+        ),
       ),
-      body: Stack(
-        children: [
-          ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-            itemCount: _coupons.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final item = _coupons[index];
-              final double progress = item['total'] > 0 ? item['used'] / item['total'] : 0.0;
+      body: _buildBody(),
+    );
+  }
 
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    )
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 12),
+            Text('Failed to load coupons', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(_error!, style: const TextStyle(color: Colors.grey, fontSize: 14), textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _fetchCoupons(status: _statuses[_tabController.index]),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF3B30)),
+              child: const Text('Retry', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_coupons.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.local_offer_outlined, color: Colors.grey, size: 64),
+            const SizedBox(height: 16),
+            const Text('No coupons found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(
+              'Create your first coupon by tapping the + button',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _coupons.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final coupon = _coupons[index];
+        final progress = coupon.usageLimit > 0 ? coupon.usedCount / coupon.usageLimit : 0.0;
+        final statusDisplay = coupon.status.toUpperCase();
+        final statusColor = _getStatusColor(coupon.status);
+        final statusTextColor = _getStatusTextColor(coupon.status);
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.local_offer_outlined, color: Color(0xFFFF3B30), size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.local_offer_outlined, color: Color(0xFFFF3B30), size: 18),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item['code'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                              const SizedBox(height: 2),
-                              Text(item['subtitle'], style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              item['discount'],
-                              style: const TextStyle(color: Color(0xFFFF3B30), fontWeight: FontWeight.bold, fontSize: 15),
-                            ),
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: item['statusColor'],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                item['status'],
-                                style: TextStyle(color: item['statusTextColor'], fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
+                        Text(coupon.couponCode, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        const SizedBox(height: 2),
+                        Text(coupon.couponName, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        RichText(
-                          text: TextSpan(
-                            text: 'Used: ',
-                            style: const TextStyle(color: Colors.grey, fontSize: 11),
-                            children: [
-                              TextSpan(
-                                text: '${item['used']}/${item['total']}',
-                                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                        RichText(
-                          text: TextSpan(
-                            text: 'Per user: ',
-                            style: const TextStyle(color: Colors.grey, fontSize: 11),
-                            children: [
-                              TextSpan(
-                                text: '${item['perUser']}',
-                                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                        RichText(
-                          text: TextSpan(
-                            text: 'Expires: ',
-                            style: const TextStyle(color: Colors.grey, fontSize: 11),
-                            children: [
-                              TextSpan(
-                                text: '${item['expires']}',
-                                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: Colors.red.shade50,
-                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF3B30)),
-                        minHeight: 4,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
-              child: SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF3B30),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
                   ),
-                  child: const Text('Save & Review Details', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        _formatDiscount(coupon),
+                        style: const TextStyle(color: Color(0xFFFF3B30), fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          statusDisplay,
+                          style: TextStyle(color: statusTextColor, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      text: 'Used: ',
+                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                      children: [
+                        TextSpan(
+                          text: '${coupon.usedCount}/${coupon.usageLimit}',
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  RichText(
+                    text: TextSpan(
+                      text: 'Per user: ',
+                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                      children: [
+                        TextSpan(
+                          text: '${coupon.perUserLimit}x',
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  RichText(
+                    text: TextSpan(
+                      text: 'Expires: ',
+                      style: const TextStyle(color: Colors.grey, fontSize: 11),
+                      children: [
+                        TextSpan(
+                          text: coupon.expiryDate.split('T')[0],
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.red.shade50,
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF3B30)),
+                  minHeight: 4,
                 ),
               ),
-            ),
-          )
-        ],
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
-

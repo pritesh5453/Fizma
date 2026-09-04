@@ -1,11 +1,130 @@
 import 'package:fizmaa/Screens/Profile/kyc/buisness_form.dart';
+import 'package:fizmaa/api_endpoints/api_endpoint.dart';
+import 'package:fizmaa/models_n_services/profile/profile_model.dart';
+import 'package:fizmaa/models_n_services/profile/profile_svc.dart';
+import 'package:fizmaa/utils/app_preference.dart';
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 
-class OrganizerProfileScreen extends StatelessWidget {
+class OrganizerProfileScreen extends StatefulWidget {
   const OrganizerProfileScreen({super.key});
 
   @override
+  State<OrganizerProfileScreen> createState() => _OrganizerProfileScreenState();
+}
+
+class _OrganizerProfileScreenState extends State<OrganizerProfileScreen> {
+  bool _isLoading = true;
+  ProfileData? _profileData;
+  String? _error;
+
+  late final ProfileService _profileService;
+
+  @override
+  void initState() {
+    super.initState();
+    final dio = Dio(BaseOptions(
+      baseUrl: ApiEndpoints.baseUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    ));
+    _profileService = ProfileService(dio);
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await _profileService.getProfile();
+      setState(() {
+        _profileData = response.data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Helper: Get initials from name
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return '?';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name.substring(0, 1).toUpperCase();
+  }
+
+  // Helper: Get verification status text
+  String _getVerificationStatus(bool isVerified) {
+    return isVerified ? 'VERIFIED' : 'PENDING';
+  }
+
+  // Helper: Get verification colors
+  Color _getVerificationBgColor(bool isVerified) {
+    return isVerified ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7);
+  }
+
+  Color _getVerificationTextColor(bool isVerified) {
+    return isVerified ? const Color(0xFF16A34A) : const Color(0xFFD97706);
+  }
+
+  Color _getVerificationIconColor(bool isVerified) {
+    return isVerified ? const Color(0xFF22C55E) : const Color(0xFFD97706);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFDF8F6),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFDF8F6),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 12),
+              const Text('Failed to load profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(_error!, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadProfile,
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444)),
+                child: const Text('Retry', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final profile = _profileData!.profile;
+    final business = _profileData!.business;
+    final kyc = _profileData!.kyc;
+    final bank = _profileData!.bank;
+    final verification = _profileData!.verificationStatus;
+
+    final name = profile.fullName ?? profile.organisationName;
+    final organisation = profile.organisationName;
+    final email = profile.email;
+    final phone = profile.phoneNo;
+    final location = '${business.city}, ${business.state}';
+
     return Scaffold(
       backgroundColor: const Color(0xFFFDF8F6),
       body: SafeArea(
@@ -38,7 +157,7 @@ class OrganizerProfileScreen extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 22),
-                            onPressed: () {},
+                            onPressed: () => Navigator.of(context).maybePop(),
                           ),
                         ),
                         const Text(
@@ -60,7 +179,9 @@ class OrganizerProfileScreen extends StatelessWidget {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             icon: const Icon(Icons.edit_outlined, color: Colors.white, size: 18),
-                            onPressed: () {},
+                            onPressed: () {
+                              // Navigate to edit profile screen
+                            },
                           ),
                         ),
                       ],
@@ -81,9 +202,9 @@ class OrganizerProfileScreen extends StatelessWidget {
                             border: Border.all(color: const Color(0xFFFDF8F6), width: 3),
                           ),
                           alignment: Alignment.center,
-                          child: const Text(
-                            'AK',
-                            style: TextStyle(
+                          child: Text(
+                            _getInitials(name),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -98,7 +219,9 @@ class OrganizerProfileScreen extends StatelessWidget {
                             width: 18,
                             height: 18,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF22C55E),
+                              color: verification.overallStatus == 'verified'
+                                  ? const Color(0xFF22C55E)
+                                  : const Color(0xFFF59E0B),
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
                             ),
@@ -113,18 +236,18 @@ class OrganizerProfileScreen extends StatelessWidget {
               const SizedBox(height: 42),
 
               // ---------- USER INFO ----------
-              const Text(
-                'Aryan Kumar',
-                style: TextStyle(
+              Text(
+                name ?? '',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1F2937),
                 ),
               ),
               const SizedBox(height: 2),
-              const Text(
-                'Fizmaa Organisation',
-                style: TextStyle(
+              Text(
+                organisation ?? '',
+                style: const TextStyle(
                   fontSize: 12,
                   color: Color(0xFF9CA3AF),
                 ),
@@ -138,9 +261,9 @@ class OrganizerProfileScreen extends StatelessWidget {
                   color: const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'Pro Organizer',
-                  style: TextStyle(
+                child: Text(
+                  verification.overallStatus == 'verified' ? 'Verified Organizer' : 'Pending Verification',
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFFEF4444),
@@ -164,17 +287,17 @@ class OrganizerProfileScreen extends StatelessWidget {
                     children: [
                       _buildContactRow(
                         icon: Icons.email_outlined,
-                        value: 'aryan@eventforge.io',
+                        value: email,
                       ),
                       const SizedBox(height: 12),
                       _buildContactRow(
                         icon: Icons.phone_outlined,
-                        value: '+91 88765 90876',
+                        value: phone,
                       ),
                       const SizedBox(height: 12),
                       _buildContactRow(
                         icon: Icons.location_on_outlined,
-                        value: 'Nashik, Maharashtra',
+                        value: location,
                       ),
                     ],
                   ),
@@ -199,8 +322,12 @@ class OrganizerProfileScreen extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(context, 
-                        MaterialPageRoute(builder: (context) => const BusinessOnboardingFlow()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const BusinessOnboardingFlow(),
+                          ),
+                        );
                       },
                       child: const Text(
                         'Manage >',
@@ -227,75 +354,26 @@ class OrganizerProfileScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      _buildKycRow(title: 'Business Info'),
+                      _buildKycRow(
+                        title: 'Business Info',
+                        isVerified: verification.businessVerified,
+                      ),
                       const SizedBox(height: 12),
-                      _buildKycRow(title: 'KYC Details'),
+                      _buildKycRow(
+                        title: 'KYC Details',
+                        isVerified: verification.kycVerified,
+                      ),
                       const SizedBox(height: 12),
-                      _buildKycRow(title: 'Bank Details'),
+                      _buildKycRow(
+                        title: 'Bank Details',
+                        isVerified: verification.bankVerified,
+                      ),
                     ],
                   ),
                 ),
               ),
 
               const SizedBox(height: 20),
-
-              // ---------- QUICK ACCESS SECTION ----------
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(
-                    'QUICK ACCESS',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF9CA3AF),
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFF3F4F6)),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildQuickAccessItem(
-                        icon: Icons.monetization_on_outlined,
-                        iconBg: const Color(0xFFEEF2FF),
-                        iconColor: const Color(0xFF6366F1),
-                        title: 'Transaction History',
-                        subtitle: 'Earnings, commissions & payouts',
-                      ),
-                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
-                      _buildQuickAccessItem(
-                        icon: Icons.shield_outlined,
-                        iconBg: const Color(0xFFDCFCE7),
-                        iconColor: const Color(0xFF16A34A),
-                        title: 'KYC & Verification',
-                        subtitle: 'Business info, KYC, bank details',
-                      ),
-                      const Divider(height: 1, color: Color(0xFFF3F4F6)),
-                      _buildQuickAccessItem(
-                        icon: Icons.refresh_rounded,
-                        iconBg: const Color(0xFFFEE2E2),
-                        iconColor: const Color(0xFFEF4444),
-                        title: 'Manage Refunds',
-                        subtitle: 'Approve or dispute refund requests',
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
 
               // ---------- BOTTOM STATS CARDS (3 GRID) ----------
               Padding(
@@ -340,7 +418,8 @@ class OrganizerProfileScreen extends StatelessWidget {
     );
   }
 
-  // Contact Details Row Builder
+  // ---------- UI Helpers ----------
+
   Widget _buildContactRow({required IconData icon, required String value}) {
     return Row(
       children: [
@@ -366,8 +445,12 @@ class OrganizerProfileScreen extends StatelessWidget {
     );
   }
 
-  // KYC Row Builder
-  Widget _buildKycRow({required String title}) {
+  Widget _buildKycRow({required String title, required bool isVerified}) {
+    final status = _getVerificationStatus(isVerified);
+    final bgColor = _getVerificationBgColor(isVerified);
+    final textColor = _getVerificationTextColor(isVerified);
+    final iconColor = _getVerificationIconColor(isVerified);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -376,11 +459,15 @@ class OrganizerProfileScreen extends StatelessWidget {
             Container(
               width: 18,
               height: 18,
-              decoration: const BoxDecoration(
-                color: Color(0xFF22C55E),
+              decoration: BoxDecoration(
+                color: iconColor,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_rounded, color: Colors.white, size: 12),
+              child: Icon(
+                isVerified ? Icons.check_rounded : Icons.schedule_rounded,
+                color: Colors.white,
+                size: 12,
+              ),
             ),
             const SizedBox(width: 10),
             Text(
@@ -396,15 +483,15 @@ class OrganizerProfileScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: const Color(0xFFDCFCE7),
+            color: bgColor,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Text(
-            'VERIFIED',
+          child: Text(
+            status,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF16A34A),
+              color: textColor,
             ),
           ),
         ),
@@ -412,67 +499,6 @@ class OrganizerProfileScreen extends StatelessWidget {
     );
   }
 
-  // Quick Access Item Builder
-  Widget _buildQuickAccessItem({
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-  }) {
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, color: iconColor, size: 18),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF9CA3AF),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Color(0xFFD1D5DB),
-              size: 18,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Bottom Stat Card Builder
   Widget _buildStatCard({
     required String value,
     required String label,
