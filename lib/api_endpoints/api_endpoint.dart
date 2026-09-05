@@ -1,7 +1,7 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String baseUrl = "http://fizmaa.gccltd.in";
+  static const String baseUrl = "https://fizmaa.gccltd.in";
 
   static const String organiserLogin = "$baseUrl/api/auth/organiser/login";
   static const String organiserEvents = "$baseUrl/api/Event/events";
@@ -17,6 +17,7 @@ class ApiEndpoints {
 
       static const String createTicket = '/api/Event/create-ticket';
       static const String tableTickets = '/api/Event/table-tickets';
+      static const String createPass = '/api/create-pass';
 
       static String getVolunteers(int organiserId) =>
       '/api/volunteer/organiser/$organiserId';

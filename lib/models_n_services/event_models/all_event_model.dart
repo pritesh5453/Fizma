@@ -3,7 +3,7 @@ class EventItem {
   final String title;
   final String status;
   final String categoryTag;
-  final String date;
+  final String? date;
   final String sessions;
   final String performers;
   final String venue;
@@ -19,7 +19,7 @@ class EventItem {
     required this.title,
     required this.status,
     required this.categoryTag,
-    required this.date,
+    this.date,
     required this.sessions,
     required this.performers,
     required this.venue,
@@ -37,39 +37,19 @@ class EventItem {
       title: json['title'] ?? '',
       status: json['status'] ?? '',
       categoryTag: json['category_tag'] ?? '',
-      date: json['date'] ?? '',
-      sessions: json['sessions'] ?? '',
+      date: json['date']?.toString(),
+      sessions: json['sessions'] ?? '0 sessions',
       performers: json['performers'] ?? '',
-      venue: json['venue'] ?? '',
-      volunteers: json['volunteers'] ?? '',
+      venue: json['venue'] ?? 'No venue',
+      volunteers: json['volunteers'] ?? '0 volunteers',
       ticketsSold: json['tickets_sold'] ?? 0,
       totalTickets: json['total_tickets'] ?? 0,
-      revenue: json['revenue'] ?? '',
+      revenue: json['revenue'] ?? '₹0',
       bannerImage: json['banner_image'],
       createdAt: json['created_at'] ?? '',
     );
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'status': status,
-      'category_tag': categoryTag,
-      'date': date,
-      'sessions': sessions,
-      'performers': performers,
-      'venue': venue,
-      'volunteers': volunteers,
-      'tickets_sold': ticketsSold,
-      'total_tickets': totalTickets,
-      'revenue': revenue,
-      'banner_image': bannerImage,
-      'created_at': createdAt,
-    };
-  }
 }
-
 
 class EventsResponse {
   final bool success;

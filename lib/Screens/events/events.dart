@@ -1,6 +1,6 @@
 import 'package:fizmaa/Screens/events/EventDetails_screen.dart';
-import 'package:fizmaa/models_n_services/event_models/all_event_model.dart';
 import 'package:fizmaa/models_n_services/event_models/all_event_svc.dart';
+import 'package:fizmaa/models_n_services/events/all_events_model.dart';
 import 'package:fizmaa/utils/app_preference.dart';
 import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +14,7 @@ class MyEventsScreen extends StatefulWidget {
 
 class _MyEventsScreenState extends State<MyEventsScreen> {
   String _selectedFilter = 'All';
-  List<EventItem> _events = [];
+  List<EventData> _events = [];
   bool _isLoading = true;
   String? _error;
 
@@ -51,7 +51,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       String status = _selectedFilter.toLowerCase();
       if (status == 'all') status = 'all';
 
-      // ✅ New service call – returns EventsResponse with List<EventItem>
       final response = await EventsService().getEvents(
         organiserId: organiserId,
         limit: 10,
@@ -60,7 +59,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       );
 
       setState(() {
-        _events = response.data.cast<EventItem>();   
+        _events = response.data;
         _isLoading = false;
       });
     } catch (e) {
@@ -251,9 +250,9 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     );
   }
 
-  // ---------- Event Card ----------
-  Widget _buildEventCard(EventItem event) {
-    double progress = event.totalTickets > 0 ? event.ticketsSold / event.totalTickets : 0;
+  // ---------- Event Card (with null safety) ----------
+  Widget _buildEventCard(EventData event) {
+    final progress = (event.progressPercentage / 100).clamp(0.0, 1.0).toDouble();
     String imageUrl = event.bannerImage ?? '';
     return GestureDetector(
       onTap: () {
@@ -304,7 +303,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                           children: [
                             const Icon(Icons.confirmation_number, size: 10, color: Colors.white),
                             const SizedBox(width: 4),
-                            Text(event.categoryTag, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
+                            Text(event.category.isNotEmpty ? event.category : 'General', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
                           ],
                         ),
                       ),
@@ -332,7 +331,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(child: Text(event.title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.kTextDark))),
-                      Text(event.sessions, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                      Text('${event.progressPercentage}% progress', style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -340,11 +339,11 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                     children: [
                       const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF9E9E9E)),
                       const SizedBox(width: 4),
-                      Text(event.date, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                      Text(event.eventDate ?? 'TBD', style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
                       const Spacer(),
                       const Icon(Icons.location_on_outlined, size: 12, color: Color(0xFF9E9E9E)),
                       const SizedBox(width: 4),
-                      Text(event.venue, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                      Text(event.location ?? 'No venue', style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -352,12 +351,12 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                     children: [
                       const Icon(Icons.person_outline, size: 13, color: AppColors.kRed),
                       const SizedBox(width: 4),
-                      Expanded(child: Text(event.performers, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF4B5563)))),
+                      Expanded(child: Text('${event.ticketsSold} tickets sold', overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF4B5563)))),
                       Row(
                         children: [
                           const Icon(Icons.people_outline, size: 12, color: Color(0xFF9E9E9E)),
                           const SizedBox(width: 4),
-                          Text(event.volunteers, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                          Text('ID: ${event.id}', style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
                         ],
                       ),
                     ],
@@ -377,9 +376,9 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text('${event.ticketsSold}/${event.totalTickets}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF9CA3AF))),
+                      Text('${event.ticketsSold} sold', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF9CA3AF))),
                       const SizedBox(width: 8),
-                      Text(event.revenue, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
+                      Text('₹${event.totalRevenue}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF059669))),
                     ],
                   ),
                 ],
@@ -392,16 +391,21 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   }
 }
 
-// ---------- Event Detail Screen (same as before) ----------
+// ---------- Event Detail Screen (with null safety) ----------
 class EventDetailScreen extends StatelessWidget {
-  final EventItem event;
+  final EventData event;
   const EventDetailScreen({super.key, required this.event});
 
   @override
   Widget build(BuildContext context) {
-    String imageUrl = event.bannerImage ?? '';
+    String imageUrl = event.bannerImage;
     return Scaffold(
-      appBar: AppBar(title: Text(event.title), backgroundColor: Colors.white, elevation: 0, foregroundColor: AppColors.kTextDark),
+      appBar: AppBar(
+        title: Text(event.title),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: AppColors.kTextDark,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -410,26 +414,71 @@ class EventDetailScreen extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: imageUrl.isNotEmpty
-                  ? Image.network(imageUrl, height: 200, width: double.infinity, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(height: 200, color: Colors.grey.shade200, child: const Icon(Icons.image, size: 50, color: Colors.grey)))
-                  : Container(height: 200, color: Colors.grey.shade200, child: const Icon(Icons.image, size: 50, color: Colors.grey)),
+                  ? Image.network(
+                      imageUrl,
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 200,
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                      ),
+                    )
+                  : Container(
+                      height: 200,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                    ),
             ),
             const SizedBox(height: 16),
             Text(event.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
-            Row(children: [const Icon(Icons.calendar_today, size: 16, color: Colors.grey), const SizedBox(width: 6), Text(event.date, style: const TextStyle(fontSize: 14, color: Colors.grey))]),
+            Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                const SizedBox(width: 6),
+                Text(event.eventDate ?? 'N/A', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+              ],
+            ),
             const SizedBox(height: 8),
-            Row(children: [const Icon(Icons.location_on, size: 16, color: Colors.grey), const SizedBox(width: 6), Text(event.venue, style: const TextStyle(fontSize: 14, color: Colors.grey))]),
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                const SizedBox(width: 6),
+                Text(event.location ?? 'N/A', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+              ],
+            ),
             const SizedBox(height: 8),
-            Row(children: [const Icon(Icons.person, size: 16, color: Colors.grey), const SizedBox(width: 6), Text(event.performers, style: const TextStyle(fontSize: 14, color: Colors.grey))]),
+            Row(
+              children: [
+                const Icon(Icons.person, size: 16, color: Colors.grey),
+                const SizedBox(width: 6),
+                Text('${event.ticketsSold} tickets sold', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+              ],
+            ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Column(children: [Text('${event.ticketsSold}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)), const Text('Sold', style: TextStyle(fontSize: 12, color: Colors.grey))]),
-                  Column(children: [Text(event.revenue, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.green)), const Text('Revenue', style: TextStyle(fontSize: 12, color: Colors.grey))]),
+                  Column(
+                    children: [
+                      Text('${event.ticketsSold}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                      const Text('Sold', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      Text('₹${event.totalRevenue}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.green)),
+                      const Text('Revenue', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
                 ],
               ),
             ),

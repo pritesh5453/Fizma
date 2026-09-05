@@ -1,12 +1,14 @@
 import 'package:fizmaa/Screens/add_event/add_venue_slot.dart' hide VenueOption;
 import 'package:fizmaa/Screens/add_event/add_volunteer/voluteer_list_screen.dart';
+import 'package:fizmaa/Screens/add_event/create_pass_screen.dart';
 import 'package:fizmaa/Screens/add_event/create_table_screen.dart';
 import 'package:fizmaa/Screens/add_event/create_ticket/create_ticket.dart';
-import 'package:fizmaa/Screens/add_event/event_slot.dart';
+import 'package:fizmaa/models_n_services/Pass/create_pass_model.dart';
 import 'package:fizmaa/models_n_services/venue_list/venue_list_model.dart';
 import 'package:fizmaa/utils/appcolors.dart';
 import 'package:flutter/material.dart';
 
+// ---------- Main Screen ----------
 class CreateTicketsScreen extends StatefulWidget {
   final int eventId;
   final int organiserId;
@@ -27,13 +29,11 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
   int _activeVenueIndex = 0;
   String _selectedSessionFilter = '';
   int _selectedSlotId = 0;
-  int _selectedTabIndex = 0;
+  int _selectedTabIndex = 0; // 0: Tickets, 1: Tables, 2: Passes
 
-  // ✅ Returns only real slots (no "All Sessions")
   List<MapEntry<String, int>> get _slotFilters {
     if (widget.venuesWithSlots.isEmpty) return [];
     final slots = widget.venuesWithSlots[_activeVenueIndex].slots;
-    // ✅ Only include slots with non-null id
     return slots
         .where((s) => s.id != null)
         .map((s) => MapEntry(s.title, s.id!))
@@ -42,6 +42,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
   late List<List<TicketTier>> _venueTickets;
   late List<List<TableTier>> _venueTables;
+  late List<List<PassTier>> _venuePasses;
 
   @override
   void initState() {
@@ -49,7 +50,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     final venueCount = widget.venuesWithSlots.length;
     _venueTickets = List.generate(venueCount, (_) => []);
     _venueTables = List.generate(venueCount, (_) => []);
-    // Default to first slot
+    _venuePasses = List.generate(venueCount, (_) => []);
     final filters = _slotFilters;
     if (filters.isNotEmpty) {
       _selectedSlotId = filters.first.value;
@@ -69,6 +70,12 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     });
   }
 
+  void _addPass(PassTier pass) {
+    setState(() {
+      _venuePasses[_activeVenueIndex].add(pass);
+    });
+  }
+
   void _toggleTicketActive(int venueIndex, int ticketIndex) {
     setState(() {
       _venueTickets[venueIndex][ticketIndex].isActive =
@@ -80,6 +87,13 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     setState(() {
       _venueTables[venueIndex][tableIndex].isActive =
           !_venueTables[venueIndex][tableIndex].isActive;
+    });
+  }
+
+  void _togglePassActive(int venueIndex, int passIndex) {
+    setState(() {
+      _venuePasses[venueIndex][passIndex].isActive =
+          !_venuePasses[venueIndex][passIndex].isActive;
     });
   }
 
@@ -97,6 +111,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     final activeVenue = activeVenueData.venue;
     final currentTickets = _venueTickets[_activeVenueIndex];
     final currentTables = _venueTables[_activeVenueIndex];
+    final currentPasses = _venuePasses[_activeVenueIndex];
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF7F7),
@@ -126,7 +141,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                     const SizedBox(height: 10),
                     _buildVenueSelectorList(),
                     const SizedBox(height: 20),
-
                     const Text(
                       'SLOT / SESSION (OPTIONAL)',
                       style: TextStyle(
@@ -139,14 +153,13 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                     const SizedBox(height: 10),
                     _buildSessionFilterChips(),
                     const SizedBox(height: 12),
-
                     _buildVenueSessionBadge(activeVenue),
                     const SizedBox(height: 16),
-
                     _buildInventoryCard(
                       activeVenue,
                       currentTickets,
                       currentTables,
+                      currentPasses,
                     ),
                   ],
                 ),
@@ -446,9 +459,17 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     VenueOption activeVenue,
     List<TicketTier> tickets,
     List<TableTier> tables,
+    List<PassTier> passes,
   ) {
     final isTicketTab = _selectedTabIndex == 0;
-    final items = isTicketTab ? tickets : tables;
+    final isTableTab = _selectedTabIndex == 1;
+    final isPassTab = _selectedTabIndex == 2;
+
+    final items = isTicketTab
+        ? tickets
+        : isTableTab
+            ? tables
+            : passes;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -465,7 +486,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
       ),
       child: Column(
         children: [
-          // Segmented Control
+          // Segmented Control - 3 tabs
           Container(
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
@@ -542,17 +563,55 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                     ),
                   ),
                 ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectedTabIndex = 2),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _selectedTabIndex == 2
+                            ? Colors.white
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: _selectedTabIndex == 2
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Passes',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: _selectedTabIndex == 2
+                                ? AppColors.kRed
+                                : const Color(0xFF666666),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 16),
 
-          // Header
+          // Header with Add button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isTicketTab ? 'Tickets' : 'Tables',
+                isTicketTab
+                    ? 'Tickets'
+                    : isTableTab
+                        ? 'Tables'
+                        : 'Passes',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -570,7 +629,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                       capacity: activeVenue.capacity,
                     );
                     if (ticket != null) _addTicket(ticket);
-                  } else {
+                  } else if (isTableTab) {
                     final table = await showCreateTableBottomSheet(
                       context,
                       eventId: widget.eventId,
@@ -578,10 +637,21 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                       slotId: _selectedSlotId,
                     );
                     if (table != null) _addTable(table);
+                  } else {
+                    final pass = await showCreatePassBottomSheet(
+                      context,
+                      eventId: widget.eventId,
+                      venueId: activeVenue.id,
+                    );
+                    if (pass != null) _addPass(pass as PassTier);
                   }
                 },
                 child: Text(
-                  isTicketTab ? '+ Add Ticket Tier' : '+ Add Table Tier',
+                  isTicketTab
+                      ? '+ Add Ticket Tier'
+                      : isTableTab
+                          ? '+ Add Table Tier'
+                          : '+ Add Pass Tier',
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -594,7 +664,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
           const SizedBox(height: 14),
 
           if (items.isEmpty)
-            _buildEmptyState(activeVenue, isTicketTab)
+            _buildEmptyState(activeVenue, isTicketTab, isTableTab, isPassTab)
           else
             Column(
               children: [
@@ -607,8 +677,18 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                       idx,
                       activeVenue,
                     );
+                  } else if (isTableTab) {
+                    return _buildTableCard(
+                      item as TableTier,
+                      idx,
+                      activeVenue,
+                    );
                   } else {
-                    return _buildTableCard(item as TableTier, idx, activeVenue);
+                    return _buildPassCard(
+                      item as PassTier,
+                      idx,
+                      activeVenue,
+                    );
                   }
                 }).toList(),
               ],
@@ -619,7 +699,25 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
   }
 
   // ---------- Empty State ----------
-  Widget _buildEmptyState(VenueOption activeVenue, bool isTicket) {
+  Widget _buildEmptyState(
+    VenueOption activeVenue,
+    bool isTicket,
+    bool isTable,
+    bool isPass,
+  ) {
+    String label;
+    IconData icon;
+    if (isTicket) {
+      label = 'ticket';
+      icon = Icons.confirmation_number_outlined;
+    } else if (isTable) {
+      label = 'table';
+      icon = Icons.table_restaurant_outlined;
+    } else {
+      label = 'pass';
+      icon = Icons.card_giftcard;
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -641,16 +739,14 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              isTicket
-                  ? Icons.confirmation_number_outlined
-                  : Icons.table_restaurant_outlined,
+              icon,
               color: AppColors.kRed,
               size: 24,
             ),
           ),
           const SizedBox(height: 10),
           Text(
-            isTicket ? 'No ticket tiers yet' : 'No table tiers yet',
+            'No $label tiers yet',
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -659,7 +755,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Create your first ${isTicket ? "ticket" : "table"} tier for ${activeVenue.name}',
+            'Create your first $label tier for ${activeVenue.name}',
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 11, color: AppColors.kHint),
           ),
@@ -675,7 +771,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                   capacity: activeVenue.capacity,
                 );
                 if (ticket != null) _addTicket(ticket);
-              } else {
+              } else if (isTable) {
                 final table = await showCreateTableBottomSheet(
                   context,
                   eventId: widget.eventId,
@@ -683,10 +779,21 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                   slotId: _selectedSlotId,
                 );
                 if (table != null) _addTable(table);
+              } else {
+                final pass = await showCreatePassBottomSheet(
+                  context,
+                  eventId: widget.eventId,
+                  venueId: activeVenue.id,
+                );
+                if (pass != null) _addPass(pass as PassTier);
               }
             },
             child: Text(
-              isTicket ? '+ Add Ticket Tier' : '+ Add Table Tier',
+              isTicket
+                  ? '+ Add Ticket Tier'
+                  : isTable
+                      ? '+ Add Table Tier'
+                      : '+ Add Pass Tier',
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -699,7 +806,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
-  // ---------- Ticket Card ----------
+  // ---------- Ticket Card (Row replaced with Wrap) ----------
   Widget _buildTicketCard(TicketTier ticket, int index, VenueOption venue) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -759,20 +866,21 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
+          // ✅ Wrap instead of Row (no overflow)
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
             children: [
               _infoChip(
                 icon: Icons.currency_rupee,
                 label: 'Price',
                 value: '${ticket.price}',
               ),
-              const SizedBox(width: 12),
               _infoChip(
                 icon: Icons.confirmation_number,
                 label: 'Total',
                 value: '${ticket.totalTickets}',
               ),
-              const SizedBox(width: 12),
               _infoChip(
                 icon: Icons.person,
                 label: 'Max per Person',
@@ -805,7 +913,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     );
   }
 
-  // ---------- Table Card ----------
+  // ---------- Table Card (Row replaced with Wrap) ----------
   Widget _buildTableCard(TableTier table, int index, VenueOption venue) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -865,20 +973,21 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
+          // ✅ Wrap instead of Row
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
             children: [
               _infoChip(
                 icon: Icons.currency_rupee,
                 label: 'Price',
                 value: '${table.price}',
               ),
-              const SizedBox(width: 12),
               _infoChip(
                 icon: Icons.table_restaurant,
                 label: 'Total',
                 value: '${table.totalTables}',
               ),
-              const SizedBox(width: 12),
               _infoChip(
                 icon: Icons.person,
                 label: 'Max per Person',
@@ -894,6 +1003,98 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                 style: TextStyle(fontSize: 10, color: AppColors.kHint),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Pass Card (Row replaced with Wrap) ----------
+  Widget _buildPassCard(PassTier pass, int index, VenueOption venue) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8F8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFEEEEEE), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                pass.name,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.kTextDark,
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: pass.isActive
+                          ? const Color(0xFFE8F5E9)
+                          : const Color(0xFFFFEBEE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      pass.isActive ? 'Active' : 'Inactive',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: pass.isActive ? Colors.green : Colors.red,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _togglePassActive(_activeVenueIndex, index),
+                    child: Icon(
+                      pass.isActive ? Icons.toggle_on : Icons.toggle_off,
+                      color: pass.isActive ? AppColors.kRed : Colors.grey,
+                      size: 28,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // ✅ Wrap instead of Row (fixes overflow)
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              _infoChip(
+                icon: Icons.currency_rupee,
+                label: 'Price',
+                value: '${pass.price}',
+              ),
+              _infoChip(
+                icon: Icons.card_giftcard,
+                label: 'Total Passes',
+                value: '${pass.totalPasses}',
+              ),
+              _infoChip(
+                icon: Icons.person,
+                label: 'Max per Person',
+                value: '${pass.maxPerPerson}',
+              ),
+              _infoChip(
+                icon: Icons.calendar_today,
+                label: 'Validity (days)',
+                value: '${pass.validityDays}',
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -936,7 +1137,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
 
   // ---------- Bottom Button ----------
   Widget _buildBottomButton() {
-    // Check if any ticket or table exists across all venues
     bool hasInventory = false;
     for (var list in _venueTickets) {
       if (list.isNotEmpty) {
@@ -946,6 +1146,14 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
     }
     if (!hasInventory) {
       for (var list in _venueTables) {
+        if (list.isNotEmpty) {
+          hasInventory = true;
+          break;
+        }
+      }
+    }
+    if (!hasInventory) {
+      for (var list in _venuePasses) {
         if (list.isNotEmpty) {
           hasInventory = true;
           break;
@@ -972,7 +1180,7 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
                     ),
                   );
                 }
-              : null, // Disabled when no inventory
+              : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.kRed,
             foregroundColor: AppColors.kWhite,
@@ -980,7 +1188,6 @@ class _CreateTicketsScreenState extends State<CreateTicketsScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            // Optional: make disabled look lighter
             disabledBackgroundColor: AppColors.kRed.withOpacity(0.5),
             disabledForegroundColor: Colors.white.withOpacity(0.7),
           ),
