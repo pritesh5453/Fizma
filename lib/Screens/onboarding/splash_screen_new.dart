@@ -1,3 +1,4 @@
+import 'package:fizmaa/Screens/Auth/login.dart';
 import 'package:fizmaa/Screens/Auth/login_new.dart';
 import 'package:fizmaa/Screens/navbar/navbar.dart';
 import 'package:fizmaa/Screens/onboarding/decorative_icon.dart';
@@ -70,7 +71,7 @@ class _SplashScreenState extends State<SplashScreen>
     } else {
       // Not logged in – go to login screen
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const SignInScreen()),
       );
     }
   }

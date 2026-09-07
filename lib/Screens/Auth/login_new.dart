@@ -1,5 +1,6 @@
 // lib/Screens/Auth/login_screen.dart
 
+import 'package:fizmaa/Screens/Auth/login.dart';
 import 'package:fizmaa/Screens/Auth/otp_screen.dart';
 import 'package:fizmaa/Screens/Auth/signup_screen.dart';
 import 'package:fizmaa/Screens/onboarding/fizma_logo.dart';
@@ -212,8 +213,39 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 48),
+                const SizedBox(height: 12),
 
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Are you a customer? ',
+                        style: TextStyle(
+                            color: AppColors.kTextDark, fontSize: 14),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const SignInScreen()),
+                          );
+                        },
+                        child: const Text(
+                          'Log In',
+                          style: TextStyle(
+                            color: AppColors.primaryRed,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 48),
                 // ---------- Footer: privacy policy links ----------
                 Center(
                   child: Row(

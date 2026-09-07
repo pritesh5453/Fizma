@@ -258,7 +258,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => EventDetailScreen(event: event)),
+          MaterialPageRoute(builder: (context) => EventDetailsHostScreen()),
         );
       },
       child: Container(
@@ -392,110 +392,3 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
 }
 
 // ---------- Event Detail Screen (with null safety) ----------
-class EventDetailScreen extends StatelessWidget {
-  final EventData event;
-  const EventDetailScreen({super.key, required this.event});
-
-  @override
-  Widget build(BuildContext context) {
-    String imageUrl = event.bannerImage;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(event.title),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: AppColors.kTextDark,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        height: 200,
-                        color: Colors.grey.shade200,
-                        child: const Icon(Icons.image, size: 50, color: Colors.grey),
-                      ),
-                    )
-                  : Container(
-                      height: 200,
-                      color: Colors.grey.shade200,
-                      child: const Icon(Icons.image, size: 50, color: Colors.grey),
-                    ),
-            ),
-            const SizedBox(height: 16),
-            Text(event.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text(event.eventDate ?? 'N/A', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text(event.location ?? 'N/A', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.person, size: 16, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text('${event.ticketsSold} tickets sold', style: const TextStyle(fontSize: 14, color: Colors.grey)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Column(
-                    children: [
-                      Text('${event.ticketsSold}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                      const Text('Sold', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Text('₹${event.totalRevenue}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.green)),
-                      const Text('Revenue', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.kRed,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('Back to My Events'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
