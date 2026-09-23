@@ -24,7 +24,7 @@ class _CustomerNavBarState extends State<CustomerNavBar> {
 
   // ✅ Same flow pattern as before: a list of screens driven by _selectedIndex
   List<Widget> get _screens => const [
-        CustHomeScreen(),
+        EventHomeScreen(),
         _PlaceholderScreen(title: 'Categories'),
         EventTicketsScreen(),
         _PlaceholderScreen(title: 'Live Events'),

@@ -1,3 +1,4 @@
+import 'package:fizmaa/Customer_app/event_ticket/select_events/select_event.dart';
 import 'package:flutter/material.dart';
 
 class EventDetailsScreen extends StatefulWidget {
@@ -494,7 +495,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BhajanConcertScreen(),
+                        ),
+                      );
+                    },
                     child: const Text(
                       'BOOK NOW',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
